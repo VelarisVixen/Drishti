@@ -238,7 +238,7 @@ const SOSAlerts = () => {
                   <Eye className="w-6 h-6 text-blue-600" />
                 </div>
                 <div className="text-2xl font-bold text-blue-700">
-                  {allAlerts.filter(a => (a.status || 'pending') === 'monitoring' || (a.status || 'pending') === 'analyzing').length}
+                  {allAlerts.filter(a => a.status === 'monitoring' || a.status === 'analyzing').length}
                 </div>
                 <div className="text-xs text-gray-600">Monitoring</div>
               </div>
