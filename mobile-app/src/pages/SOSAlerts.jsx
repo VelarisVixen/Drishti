@@ -25,35 +25,28 @@ const SOSAlerts = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState('all');
 
-  // Combine SOS alerts (from panic context) and danger alerts for comprehensive view
+  // Use ONLY realtime SOS alerts (no mock/demo or merged data)
   const allAlerts = React.useMemo(() => {
     const sosAlerts = (realtimeAlerts || []).map(alert => ({
       ...alert,
-      type: alert.type || 'sos',
-      title: alert.title || 'SOS Emergency Alert',
-      severity: alert.severity || 'high',
-      status: alert.status || 'pending',
-      reportedBy: alert.reportedBy || 'SafeGuard User',
-      location: alert.location || { address: 'Location unavailable' },
-      message: alert.message || 'Emergency situation reported'
+      // Preserve actual fields from realtime source; do not inject demo defaults
+      type: alert.type,
+      title: alert.title,
+      severity: alert.severity,
+      status: alert.status,
+      reportedBy: alert.reportedBy,
+      location: alert.location,
+      message: alert.message,
+      timestamp: alert.timestamp || Date.now()
     }));
 
-    const dangerAlerts = (alertHistory || []).map(alert => ({
-      ...alert,
-      type: alert.type || 'emergency',
-      severity: alert.severity || 'medium',
-      status: alert.status || 'active',
-      reportedBy: alert.source || alert.reportedBy || 'Emergency Services',
-      location: alert.location || { address: 'Location unavailable' },
-      message: alert.message || 'Emergency alert received'
-    }));
-
-    return [...sosAlerts, ...dangerAlerts].sort((a, b) => {
+    // Sort newest first
+    return sosAlerts.sort((a, b) => {
       const aTime = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp || Date.now());
       const bTime = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp || Date.now());
       return bTime - aTime;
     });
-  }, [realtimeAlerts, alertHistory]);
+  }, [realtimeAlerts]);
 
 
   const handleRefresh = async () => {
