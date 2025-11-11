@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   uploadVideoAndGetURL,
   createSOSAlert,
-  subscribeToSOSAlerts,
   createNotificationLog
 } from '@/lib/firebase';
 import { supabase, uploadStreamToSupabase } from '@/lib/supabaseClient';
