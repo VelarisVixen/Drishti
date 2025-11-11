@@ -136,7 +136,7 @@ const Dashboard = () => {
                 <Shield className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-800">SafeGuard</h1>
+                <h1 className="text-xl font-bold text-gray-800">Drishti</h1>
                 <p className="text-sm text-gray-600">Welcome back, {userProfile?.name}</p>
               </div>
             </div>
