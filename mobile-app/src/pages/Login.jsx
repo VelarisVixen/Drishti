@@ -145,6 +145,11 @@ const Login = () => {
               />
             </div>
 
+            {/* Google Sign-in */}
+            <div className="mb-3">
+              <GoogleSignIn />
+            </div>
+
             {/* Submit Button */}
             <motion.button
               type="submit"
