@@ -218,8 +218,8 @@ const Dashboard = () => {
                     </div>
                     <div className={`text-sm ${panicActivated ? 'text-red-600' : 'text-green-600'}`}>
                       {panicActivated
-                        ? 'Emergency alert saved to Firebase & services notified'
-                        : 'Real-time Firebase emergency system operational'
+                        ? 'Emergency alert saved to Supabase & services notified'
+                        : 'Real-time Supabase emergency system operational'
                       }
                     </div>
                   </div>
