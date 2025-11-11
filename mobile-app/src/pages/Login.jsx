@@ -70,7 +70,7 @@ const Login = () => {
               transition={{ delay: 0.3 }}
               className="text-3xl font-bold text-gray-800 mb-2"
             >
-              Welcome to SafeGuard
+              Welcome to Drishti
             </motion.h1>
             
             <motion.p
