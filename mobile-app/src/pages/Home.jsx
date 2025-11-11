@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
@@ -51,7 +50,7 @@ const Home = () => {
   return (
     <>
       <Helmet>
-        <title>SafeGuard - Your Safety Companion</title>
+        <title>Drishti - Your Safety Companion</title>
         <meta name="description" content="Stay safe with real-time crowd safety monitoring and emergency alerts" />
       </Helmet>
 
