@@ -118,7 +118,7 @@ const SOSHistory = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-yellow-50 to-amber-50 pb-24">
       <Helmet>
-        <title>SOS History - SafeGuard</title>
+        <title>SOS History - Drishti</title>
       </Helmet>
 
       {/* Decorative background */}
