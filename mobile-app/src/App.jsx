@@ -12,6 +12,8 @@ import Dashboard from '@/pages/Dashboard';
 import SOSAlerts from '@/pages/SOSAlerts';
 import Settings from '@/pages/Settings';
 import SOSHistory from '@/pages/SOSHistory';
+import Welcome from '@/pages/Welcome';
+import AuthCallback from '@/pages/AuthCallback';
 import BottomNavigation from '@/components/BottomNavigation';
 
 // Protected Route Component
@@ -23,7 +25,7 @@ const ProtectedRoute = ({ children }) => {
       <div className="min-h-screen bg-gradient-to-br from-white via-yellow-50 to-amber-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading SafeGuard...</p>
+          <p className="text-gray-600">Loading Drishti...</p>
         </div>
       </div>
     );
@@ -41,7 +43,7 @@ const PublicRoute = ({ children }) => {
       <div className="min-h-screen bg-gradient-to-br from-white via-yellow-50 to-amber-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading SafeGuard...</p>
+          <p className="text-gray-600">Loading Drishti...</p>
         </div>
       </div>
     );
@@ -63,6 +65,9 @@ const AppRoutes = () => {
           </PublicRoute>
         }
       />
+
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/welcome" element={<Welcome />} />
 
       {/* Protected routes with shared layout */}
       <Route
@@ -124,7 +129,7 @@ function App() {
   return (
     <Router>
       <Helmet>
-        <title>SafeGuard - Personal Safety Dashboard</title>
+        <title>Drishti - Personal Safety Dashboard</title>
         <meta name="description" content="Modern personal safety app with AI-powered monitoring and emergency features" />
         <meta name="theme-color" content="#fbbf24" />
       </Helmet>

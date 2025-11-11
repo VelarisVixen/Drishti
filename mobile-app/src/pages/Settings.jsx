@@ -141,7 +141,7 @@ const Settings = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-yellow-50 to-amber-50 pb-24">
       <Helmet>
-        <title>Settings - SafeGuard</title>
+        <title>Settings - Drishti</title>
       </Helmet>
 
       {/* Decorative background */}
@@ -290,7 +290,7 @@ const Settings = () => {
             transition={{ delay: 0.7 }}
             className="text-center text-gray-500 text-sm"
           >
-            <p>SafeGuard v1.0.0</p>
+            <p>Drishti v1.0.0</p>
             <p>Built with ❤️ for your safety</p>
           </motion.div>
         </div>

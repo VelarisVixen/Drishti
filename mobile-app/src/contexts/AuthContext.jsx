@@ -3,6 +3,7 @@ import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { toast } from '@/components/ui/use-toast';
 import { auth, db, createOrUpdateUser, getUser, COLLECTIONS } from '@/lib/firebase';
+import { ensureSupabaseUser } from '@/lib/supabaseClient';
 
 const AuthContext = createContext();
 
@@ -45,16 +46,16 @@ export const AuthProvider = ({ children }) => {
         }
       } else {
         // Check for legacy localStorage session (migration)
-        const savedUser = localStorage.getItem('safeguard_user_session');
+        const savedUser = localStorage.getItem('drishti_user_session');
         if (savedUser) {
           try {
             const parsedUser = JSON.parse(savedUser);
             // Migrate to Firebase Auth
             await login(parsedUser);
-            localStorage.removeItem('safeguard_user_session'); // Clean up
+            localStorage.removeItem('drishti_user_session'); // Clean up
           } catch (error) {
             console.error('Error migrating user:', error);
-            localStorage.removeItem('safeguard_user_session');
+            localStorage.removeItem('drishti_user_session');
           }
         }
         setUser(null);
@@ -116,6 +117,22 @@ export const AuthProvider = ({ children }) => {
         try {
           await createOrUpdateUser(userId, finalUserData);
           console.log('✅ User successfully saved to Firebase');
+          // Supabase first-login sync (Firebase branch)
+          try {
+            console.log('[Supabase] Initiating first-login sync for user:', userId);
+            const supabasePayload = {
+              user_id: userId,
+              name: finalUserData.name,
+              email: finalUserData.email,
+              phone: finalUserData.phone,
+              role: finalUserData.role || 'citizen'
+            };
+            console.log('[Supabase] Payload prepared:', supabasePayload);
+            const result = await ensureSupabaseUser(supabasePayload);
+            console.log('[Supabase] ensureSupabaseUser result:', result);
+          } catch (e) {
+            console.error('[Supabase] First-login sync failed (Firebase branch):', e);
+          }
         } catch (firestoreError) {
           console.warn('⚠️ Firestore save failed:', firestoreError.message);
           // Continue with Firebase Auth but without Firestore
@@ -135,13 +152,13 @@ export const AuthProvider = ({ children }) => {
       
       if (shouldUseFallback) {
         // Use local storage fallback
-        localStorage.setItem('safeguard_user_session', JSON.stringify(finalUserData));
+        localStorage.setItem('drishti_user_session', JSON.stringify(finalUserData));
         setUser({ uid: finalUserData.id, isAnonymous: true }); // Mock Firebase user
         setUserProfile(finalUserData);
         setIsAuthenticated(true);
 
         toast({
-          title: "Welcome to SafeGuard! 👋",
+          title: "Welcome to Drishti! ���",
           description: `Hello ${finalUserData.name}! Running in local mode - Firebase needs configuration.`,
           duration: 6000
         });
@@ -152,13 +169,29 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
 
         toast({
-          title: "Welcome to SafeGuard! 👋",
+          title: "Welcome to Drishti! 👋",
           description: `Hello ${finalUserData.name}! Your account is connected to Firebase.`,
           duration: 4000
         });
       }
 
       console.log('✅ User successfully created');
+      // Supabase first-login sync (final safeguard - runs in both branches)
+      try {
+        console.log('[Supabase] Preparing first-login sync payload (final)...');
+        const supabasePayload = {
+          user_id: finalUserData.id,
+          name: finalUserData.name,
+          email: finalUserData.email,
+          phone: finalUserData.phone,
+          role: finalUserData.role || 'citizen'
+        };
+        console.log('[Supabase] Final payload:', supabasePayload);
+        const result = await ensureSupabaseUser(supabasePayload);
+        console.log('[Supabase] Final ensureSupabaseUser result:', result);
+      } catch (e) {
+        console.error('[Supabase] Final first-login sync failed:', e);
+      }
       return finalUserData;
     } catch (error) {
       console.error('❌ Login error:', error);
@@ -186,7 +219,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
 
       // Clean up any remaining localStorage
-      localStorage.removeItem('safeguard_user_session');
+      localStorage.removeItem('drishti_user_session');
 
       toast({
         title: "Goodbye! 👋",

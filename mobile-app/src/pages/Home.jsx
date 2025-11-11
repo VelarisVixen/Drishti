@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
@@ -51,7 +50,7 @@ const Home = () => {
   return (
     <>
       <Helmet>
-        <title>SafeGuard - Your Safety Companion</title>
+        <title>Drishti - Your Safety Companion</title>
         <meta name="description" content="Stay safe with real-time crowd safety monitoring and emergency alerts" />
       </Helmet>
 
@@ -76,7 +75,7 @@ const Home = () => {
           >
             <Shield size={32} className="text-white" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-white mb-2">SafeGuard</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Drishti</h1>
           <p className="text-white/70">Your personal safety companion</p>
         </motion.div>
 

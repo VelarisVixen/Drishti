@@ -5,9 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   uploadVideoAndGetURL,
   createSOSAlert,
-  subscribeToSOSAlerts,
   createNotificationLog
 } from '@/lib/firebase';
+import { supabase, uploadStreamToSupabase } from '@/lib/supabaseClient';
 
 const PanicContext = createContext();
 
@@ -56,7 +56,7 @@ export const PanicProvider = ({ children }) => {
 
     if (isLocalMode) {
       // Load from localStorage for local mode
-      console.log('��� Loading SOS alerts from local storage...');
+      console.log('[Panic] Loading SOS alerts from local storage...');
       const localAlerts = JSON.parse(localStorage.getItem('local_sos_alerts') || '[]');
       setPanicHistory(localAlerts);
       setRealtimeAlerts(localAlerts);
@@ -64,24 +64,82 @@ export const PanicProvider = ({ children }) => {
       // Check for pending/active alerts (separate from button state)
       const activeAlert = localAlerts.find(alert => alert.status === 'pending' || alert.status === 'active');
       setHasActiveAlerts(!!activeAlert);
-    } else {
-      // Set up Firebase real-time subscription
-      console.log('🔄 Setting up real-time SOS alerts subscription...');
-      const unsubscribe = subscribeToSOSAlerts((alerts) => {
-        console.log('🚨 Received real-time SOS alerts:', alerts.length);
-        setPanicHistory(alerts);
-        setRealtimeAlerts(alerts);
 
-        // Check for pending/active alerts (separate from button state)
-        const activeAlert = alerts.find(alert => alert.status === 'pending' || alert.status === 'active');
-        setHasActiveAlerts(!!activeAlert);
-      });
-
-      return () => {
-        console.log('🚫 Cleaning up SOS alerts subscription');
-        unsubscribe();
-      };
+      return;
     }
+
+    // Use Supabase realtime for sos_alerts
+    let channel = null;
+    let mounted = true;
+
+    const normalize = (row) => {
+      return {
+        id: row.id,
+        timestamp: row.created_at ? new Date(row.created_at) : new Date(),
+        status: row.status || 'pending',
+        message: row.message,
+        videoUrl: row.video_url || null,
+        location: {
+          latitude: row.location_latitude,
+          longitude: row.location_longitude,
+          address: row.location_address
+        }
+      };
+    };
+
+    (async () => {
+      try {
+        console.log('[Panic] Fetching initial SOS alerts from Supabase...');
+        const { data, error } = await supabase
+          .from('sos_alerts')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (error) {
+          console.warn('[Panic] Supabase initial fetch error:', error.message || error);
+        } else if (mounted) {
+          const alerts = (data || []).map(normalize);
+          console.log('[Panic] Initial supabase alerts count=', alerts.length);
+          setPanicHistory(alerts);
+          setRealtimeAlerts(alerts);
+          const activeAlert = alerts.find(a => a.status === 'pending' || a.status === 'active');
+          setHasActiveAlerts(!!activeAlert);
+        }
+
+        // Subscribe to INSERT and UPDATE events
+        channel = supabase.channel('public:sos_alerts')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sos_alerts' }, (payload) => {
+            console.log('[Panic] Supabase INSERT received:', payload.new);
+            const newAlert = normalize(payload.new);
+            setPanicHistory(prev => [newAlert, ...prev]);
+            setRealtimeAlerts(prev => [newAlert, ...prev]);
+            setHasActiveAlerts(true);
+          })
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sos_alerts' }, (payload) => {
+            console.log('[Panic] Supabase UPDATE received:', payload.new);
+            const updated = normalize(payload.new);
+            setPanicHistory(prev => prev.map(p => p.id === updated.id ? updated : p));
+            setRealtimeAlerts(prev => prev.map(p => p.id === updated.id ? updated : p));
+            const active = (prev => prev.find(a => a.status === 'pending' || a.status === 'active'));
+            setHasActiveAlerts(!!active);
+          })
+          .subscribe((status) => {
+            console.log('[Panic] Supabase realtime subscription status:', status);
+          });
+
+      } catch (err) {
+        console.error('[Panic] Supabase realtime setup failed:', err);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+      if (channel) {
+        console.log('[Panic] Unsubscribing supabase channel');
+        channel.unsubscribe();
+      }
+    };
   }, [firebaseUser?.uid, userProfile]);
 
   const activatePanic = async (message, stream) => {
@@ -112,21 +170,37 @@ export const PanicProvider = ({ children }) => {
         currentLocation = await getCurrentLocation();
       }
 
-      // Upload video to Firebase Storage (optional - don't fail if it doesn't work)
-      let videoData = { videoUrl: null, videoThumbnail: null, videoDuration: 0 };
+      // Upload video to Supabase Storage (preferred) then fallback to Firebase if needed
+      let videoData = { videoUrl: null, videoThumbnail: null, videoDuration: 0, uploadedTo: null };
       if (stream) {
+        // First attempt: Supabase upload
         try {
-          toast({ title: "Uploading Video...", description: "Your emergency video is being securely uploaded to Firebase..." });
-          videoData = await uploadVideoAndGetURL(stream, firebaseUser.uid);
-          console.log('✅ Video uploaded successfully');
-        } catch (videoError) {
-          console.warn('⚠️ Video upload failed, continuing with SOS alert without video:', videoError.message);
-          toast({
-            title: "Video Upload Failed",
-            description: "SOS alert will be sent without video. Emergency services will still be notified.",
-            duration: 5000
-          });
-          // Continue with empty video data
+          console.log('[Panic] Attempting to upload stream to Supabase storage...');
+          toast({ title: "Uploading Video...", description: "Recording and uploading your emergency video to Supabase..." });
+          const supaResult = await uploadStreamToSupabase(stream, firebaseUser.uid, { bucket: 'first_bucket', durationMs: 15000 });
+          videoData.videoUrl = supaResult.videoUrl || null;
+          videoData.uploadedTo = 'supabase';
+          console.log('[Panic] Supabase upload success, videoUrl=', videoData.videoUrl);
+        } catch (supaError) {
+          console.warn('[Panic] Supabase upload failed:', supaError?.message || supaError);
+
+          // Fallback: try Firebase upload (existing behavior)
+          try {
+            console.log('[Panic] Falling back to Firebase upload...');
+            toast({ title: "Uploading Video...", description: "Falling back to Firebase for video upload..." });
+            const fbResult = await uploadVideoAndGetURL(stream, firebaseUser.uid);
+            videoData.videoUrl = fbResult.videoUrl || null;
+            videoData.uploadedTo = 'firebase';
+            console.log('[Panic] Firebase upload success, videoUrl=', videoData.videoUrl);
+          } catch (videoError) {
+            console.warn('⚠️ Both Supabase and Firebase video uploads failed, continuing without video:', videoError?.message || videoError);
+            toast({
+              title: "Video Upload Failed",
+              description: "SOS alert will be sent without video. Emergency services will still be notified.",
+              duration: 5000
+            });
+            // Continue with empty video data
+          }
         }
       }
 
@@ -147,6 +221,9 @@ export const PanicProvider = ({ children }) => {
 
       let alertId;
 
+      // Prepare to persist alert to Supabase sos_alerts table as well as existing Firebase/local flows
+      let supabaseInsertId = null;
+
       if (isLocalMode) {
         // Save to localStorage for local mode
         console.log('🚨 Creating SOS alert in local storage...');
@@ -158,6 +235,31 @@ export const PanicProvider = ({ children }) => {
         // Update local state immediately
         setPanicHistory(localAlerts);
         setRealtimeAlerts(localAlerts);
+
+        // Also insert a record into Supabase for analytics/backend if possible
+        try {
+          console.log('[Panic] Inserting SOS alert into Supabase table (local mode)...');
+          const insertPayload = {
+            user_id: firebaseUser.uid,
+            message: sosAlertData.message,
+            video_url: videoData.videoUrl || null,
+            location_latitude: sosAlertData.location.latitude,
+            location_longitude: sosAlertData.location.longitude,
+            location_address: sosAlertData.location.address,
+            status: 'pending',
+            // Leave gemini and analysis fields null by design
+          };
+          console.log('[Panic] Supabase insert payload (local):', insertPayload);
+          const { data: insertData, error: insertError } = await supabase.from('sos_alerts').insert([insertPayload]).select('id');
+          if (insertError) {
+            console.warn('[Panic] Supabase insert (local) error:', insertError);
+          } else {
+            supabaseInsertId = insertData?.[0]?.id;
+            console.log('[Panic] Supabase insert (local) success, id=', supabaseInsertId);
+          }
+        } catch (e) {
+          console.error('[Panic] Supabase insert (local) failed:', e);
+        }
       } else {
         // Save to Firestore (real-time)
         console.log('🚨 Creating SOS alert in Firestore...');
@@ -180,6 +282,31 @@ export const PanicProvider = ({ children }) => {
             console.warn('⚠️ Failed to create notification log:', logError.message);
             // Don't fail the entire operation if logging fails
           }
+        }
+
+        // Insert to Supabase sos_alerts table
+        try {
+          console.log('[Panic] Inserting SOS alert into Supabase table (firebase mode)...');
+          const insertPayload = {
+            user_id: firebaseUser.uid,
+            message: sosAlertData.message,
+            video_url: videoData.videoUrl || null,
+            location_latitude: sosAlertData.location.latitude,
+            location_longitude: sosAlertData.location.longitude,
+            location_address: sosAlertData.location.address,
+            status: 'pending'
+            // gemini_analysis_* and analysis fields intentionally left out (null)
+          };
+          console.log('[Panic] Supabase insert payload (firebase):', insertPayload);
+          const { data: insertData, error: insertError } = await supabase.from('sos_alerts').insert([insertPayload]).select('id');
+          if (insertError) {
+            console.warn('[Panic] Supabase insert (firebase) error:', insertError);
+          } else {
+            supabaseInsertId = insertData?.[0]?.id;
+            console.log('[Panic] Supabase insert (firebase) success, id=', supabaseInsertId);
+          }
+        } catch (e) {
+          console.error('[Panic] Supabase insert (firebase) failed:', e);
         }
       }
 

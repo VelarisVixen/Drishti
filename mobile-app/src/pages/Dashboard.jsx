@@ -25,6 +25,7 @@ import { usePanic } from '@/contexts/PanicContext';
 import { useDangerAlert } from '@/contexts/DangerAlertContext';
 import PanicButton from '@/components/PanicButton';
 import DangerAlert from '@/components/DangerAlert';
+import { supabase } from '@/lib/supabaseClient';
 
 const Dashboard = () => {
   const { userProfile, firebaseUser, logout } = useAuth();
@@ -36,7 +37,7 @@ const Dashboard = () => {
   const [realtimeStatus, setRealtimeStatus] = useState({
     sosAlerts: false,
     dangerAlerts: false,
-    firebase: false
+    supabase: false
   });
 
   useEffect(() => {
@@ -51,11 +52,11 @@ const Dashboard = () => {
   // Monitor real-time connection status
   useEffect(() => {
     setRealtimeStatus({
-      sosAlerts: !!firebaseUser && panicHistory.length >= 0, // Connected if we have a user and history loaded
+      sosAlerts: panicHistory.length >= 0, // Connected if history loaded
       dangerAlerts: dangerAlertsConnected,
-      firebase: !!firebaseUser
+      supabase: !!supabase
     });
-  }, [firebaseUser, panicHistory, dangerAlertsConnected]);
+  }, [panicHistory, dangerAlertsConnected]);
 
   const formatLastChecked = (date) => {
     const now = new Date();
@@ -135,7 +136,7 @@ const Dashboard = () => {
                 <Shield className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-800">SafeGuard</h1>
+                <h1 className="text-xl font-bold text-gray-800">Drishti</h1>
                 <p className="text-sm text-gray-600">Welcome back, {userProfile?.name}</p>
               </div>
             </div>
@@ -175,7 +176,7 @@ const Dashboard = () => {
             <div className="mt-4 flex items-center gap-4">
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Database className="w-4 h-4" />
-                <span>Firebase Real-time</span>
+                <span>Supabase Real-time</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Shield className="w-4 h-4" />
@@ -217,8 +218,8 @@ const Dashboard = () => {
                     </div>
                     <div className={`text-sm ${panicActivated ? 'text-red-600' : 'text-green-600'}`}>
                       {panicActivated
-                        ? 'Emergency alert saved to Firebase & services notified'
-                        : 'Real-time Firebase emergency system operational'
+                        ? 'Emergency alert saved to Supabase & services notified'
+                        : 'Real-time Supabase emergency system operational'
                       }
                     </div>
                   </div>
@@ -226,8 +227,8 @@ const Dashboard = () => {
                     {panicProcessing && (
                       <div className="w-6 h-6 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
                     )}
-                    {realtimeStatus.firebase && (
-                      <div className="w-3 h-3 bg-green-400 rounded-full" title="Connected to Firebase"></div>
+                    {realtimeStatus.supabase && (
+                      <div className="w-3 h-3 bg-green-400 rounded-full" title="Connected to Supabase"></div>
                     )}
                   </div>
                 </div>
@@ -238,7 +239,7 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Database className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-700">Firebase Connected</span>
+                    <span className="text-sm font-medium text-green-700">Supabase Connected</span>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-green-600">
                     <div className="flex items-center gap-1">
@@ -375,12 +376,12 @@ const Dashboard = () => {
                 {formatLastChecked(lastChecked)}
               </div>
               <div className="text-sm text-gray-600">
-                Last Firebase sync: {lastChecked.toLocaleTimeString()}
+                Last Supabase sync: {lastChecked.toLocaleTimeString()}
               </div>
-              {firebaseUser && (
+              {supabase && (
                 <div className="text-xs text-green-600 flex items-center gap-1 mt-1">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span>Connected to Firestore</span>
+                  <span>Connected to Supabase</span>
                 </div>
               )}
             </div>
