@@ -74,3 +74,79 @@ export async function ensureSupabaseUser(user) {
   console.log('[Supabase] Insert success:', data);
   return { status: 'inserted', user_id: payload.user_id, data };
 }
+
+// Helper: record a media stream for a fixed duration and return a blob
+const recordStreamToBlob = (stream, durationMs = 15000) => {
+  console.log('[Supabase] recordStreamToBlob() called with durationMs=', durationMs);
+  return new Promise((resolve, reject) => {
+    try {
+      const mediaRecorder = new MediaRecorder(stream);
+      const chunks = [];
+      let timeout;
+
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        clearTimeout(timeout);
+        const blob = new Blob(chunks, { type: 'video/mp4' });
+        console.log('[Supabase] Recording complete, blob size=', blob.size);
+        resolve(blob);
+      };
+      mediaRecorder.onerror = (e) => {
+        clearTimeout(timeout);
+        console.error('[Supabase] mediaRecorder error', e);
+        reject(e);
+      };
+
+      mediaRecorder.start();
+      timeout = setTimeout(() => {
+        if (mediaRecorder.state === 'recording') mediaRecorder.stop();
+      }, durationMs);
+    } catch (e) {
+      console.error('[Supabase] recordStreamToBlob failed:', e);
+      reject(e);
+    }
+  });
+};
+
+// Helper: upload video blob to Supabase storage bucket and return public URL
+export async function uploadStreamToSupabase(stream, userId, options = {}) {
+  const bucket = options.bucket || 'first_bucket';
+  const durationMs = options.durationMs || 15000;
+  console.log('[Supabase] uploadStreamToSupabase() starting for user=', userId, 'bucket=', bucket);
+
+  // Record stream to blob
+  const blob = await recordStreamToBlob(stream, durationMs);
+
+  const fileName = `sos-videos/${userId}_${Date.now()}.mp4`;
+  console.log('[Supabase] Uploading video file to bucket, fileName=', fileName);
+
+  try {
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(fileName, blob, { cacheControl: '3600', upsert: false });
+
+    if (uploadError) {
+      console.error('[Supabase] upload error:', uploadError);
+      throw uploadError;
+    }
+
+    console.log('[Supabase] Upload response:', uploadData);
+
+    // Get public URL
+    const { data: publicUrlData, error: publicUrlError } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(fileName);
+
+    if (publicUrlError) {
+      console.error('[Supabase] getPublicUrl error:', publicUrlError);
+      throw publicUrlError;
+    }
+
+    console.log('[Supabase] Public URL obtained:', publicUrlData?.publicUrl || publicUrlData);
+    const publicUrl = (publicUrlData && (publicUrlData.publicUrl || publicUrlData.public_url)) || null;
+    return { videoUrl: publicUrl, raw: uploadData };
+  } catch (e) {
+    console.error('[Supabase] uploadStreamToSupabase failed:', e);
+    throw e;
+  }
+}
