@@ -163,25 +163,6 @@ const SOSHistory = () => {
         </motion.header>
 
         <div className="px-6 py-6 space-y-6">
-          {/* Demo Mode Notice */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-yellow-200 rounded-xl flex items-center justify-center">
-                <Eye className="w-5 h-5 text-yellow-700" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-yellow-800">Demo Mode Active</h3>
-                <p className="text-sm text-yellow-700">
-                  SOS history is stored locally. In production, data would be synced with your account.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
           {/* Stats Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
