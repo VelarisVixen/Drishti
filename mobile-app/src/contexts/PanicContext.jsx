@@ -57,7 +57,7 @@ export const PanicProvider = ({ children }) => {
 
     if (isLocalMode) {
       // Load from localStorage for local mode
-      console.log('��� Loading SOS alerts from local storage...');
+      console.log('[Panic] Loading SOS alerts from local storage...');
       const localAlerts = JSON.parse(localStorage.getItem('local_sos_alerts') || '[]');
       setPanicHistory(localAlerts);
       setRealtimeAlerts(localAlerts);
@@ -65,24 +65,82 @@ export const PanicProvider = ({ children }) => {
       // Check for pending/active alerts (separate from button state)
       const activeAlert = localAlerts.find(alert => alert.status === 'pending' || alert.status === 'active');
       setHasActiveAlerts(!!activeAlert);
-    } else {
-      // Set up Firebase real-time subscription
-      console.log('🔄 Setting up real-time SOS alerts subscription...');
-      const unsubscribe = subscribeToSOSAlerts((alerts) => {
-        console.log('🚨 Received real-time SOS alerts:', alerts.length);
-        setPanicHistory(alerts);
-        setRealtimeAlerts(alerts);
 
-        // Check for pending/active alerts (separate from button state)
-        const activeAlert = alerts.find(alert => alert.status === 'pending' || alert.status === 'active');
-        setHasActiveAlerts(!!activeAlert);
-      });
-
-      return () => {
-        console.log('🚫 Cleaning up SOS alerts subscription');
-        unsubscribe();
-      };
+      return;
     }
+
+    // Use Supabase realtime for sos_alerts
+    let channel = null;
+    let mounted = true;
+
+    const normalize = (row) => {
+      return {
+        id: row.id,
+        timestamp: row.created_at ? new Date(row.created_at) : new Date(),
+        status: row.status || 'pending',
+        message: row.message,
+        videoUrl: row.video_url || null,
+        location: {
+          latitude: row.location_latitude,
+          longitude: row.location_longitude,
+          address: row.location_address
+        }
+      };
+    };
+
+    (async () => {
+      try {
+        console.log('[Panic] Fetching initial SOS alerts from Supabase...');
+        const { data, error } = await supabase
+          .from('sos_alerts')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (error) {
+          console.warn('[Panic] Supabase initial fetch error:', error.message || error);
+        } else if (mounted) {
+          const alerts = (data || []).map(normalize);
+          console.log('[Panic] Initial supabase alerts count=', alerts.length);
+          setPanicHistory(alerts);
+          setRealtimeAlerts(alerts);
+          const activeAlert = alerts.find(a => a.status === 'pending' || a.status === 'active');
+          setHasActiveAlerts(!!activeAlert);
+        }
+
+        // Subscribe to INSERT and UPDATE events
+        channel = supabase.channel('public:sos_alerts')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sos_alerts' }, (payload) => {
+            console.log('[Panic] Supabase INSERT received:', payload.new);
+            const newAlert = normalize(payload.new);
+            setPanicHistory(prev => [newAlert, ...prev]);
+            setRealtimeAlerts(prev => [newAlert, ...prev]);
+            setHasActiveAlerts(true);
+          })
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sos_alerts' }, (payload) => {
+            console.log('[Panic] Supabase UPDATE received:', payload.new);
+            const updated = normalize(payload.new);
+            setPanicHistory(prev => prev.map(p => p.id === updated.id ? updated : p));
+            setRealtimeAlerts(prev => prev.map(p => p.id === updated.id ? updated : p));
+            const active = (prev => prev.find(a => a.status === 'pending' || a.status === 'active'));
+            setHasActiveAlerts(!!active);
+          })
+          .subscribe((status) => {
+            console.log('[Panic] Supabase realtime subscription status:', status);
+          });
+
+      } catch (err) {
+        console.error('[Panic] Supabase realtime setup failed:', err);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+      if (channel) {
+        console.log('[Panic] Unsubscribing supabase channel');
+        channel.unsubscribe();
+      }
+    };
   }, [firebaseUser?.uid, userProfile]);
 
   const activatePanic = async (message, stream) => {
