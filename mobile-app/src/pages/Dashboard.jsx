@@ -239,7 +239,7 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Database className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-700">Firebase Connected</span>
+                    <span className="text-sm font-medium text-green-700">Supabase Connected</span>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-green-600">
                     <div className="flex items-center gap-1">
