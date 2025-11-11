@@ -158,7 +158,7 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
 
         toast({
-          title: "Welcome to SafeGuard! 👋",
+          title: "Welcome to Drishti! ���",
           description: `Hello ${finalUserData.name}! Running in local mode - Firebase needs configuration.`,
           duration: 6000
         });
@@ -169,7 +169,7 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
 
         toast({
-          title: "Welcome to SafeGuard! 👋",
+          title: "Welcome to Drishti! 👋",
           description: `Hello ${finalUserData.name}! Your account is connected to Firebase.`,
           duration: 4000
         });
