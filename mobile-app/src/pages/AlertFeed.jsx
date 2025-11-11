@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet';
@@ -69,7 +68,7 @@ const AlertFeed = () => {
   return (
     <>
       <Helmet>
-        <title>Alert Feed - SafeGuard</title>
+        <title>Alert Feed - Drishti</title>
         <meta name="description" content="Real-time safety alerts and emergency notifications in your area" />
       </Helmet>
 
