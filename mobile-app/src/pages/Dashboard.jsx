@@ -37,7 +37,7 @@ const Dashboard = () => {
   const [realtimeStatus, setRealtimeStatus] = useState({
     sosAlerts: false,
     dangerAlerts: false,
-    firebase: false
+    supabase: false
   });
 
   useEffect(() => {
