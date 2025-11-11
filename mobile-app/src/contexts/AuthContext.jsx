@@ -152,7 +152,7 @@ export const AuthProvider = ({ children }) => {
       
       if (shouldUseFallback) {
         // Use local storage fallback
-        localStorage.setItem('safeguard_user_session', JSON.stringify(finalUserData));
+        localStorage.setItem('drishti_user_session', JSON.stringify(finalUserData));
         setUser({ uid: finalUserData.id, isAnonymous: true }); // Mock Firebase user
         setUserProfile(finalUserData);
         setIsAuthenticated(true);
