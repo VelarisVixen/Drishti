@@ -81,7 +81,7 @@ const SOSAlerts = () => {
       case 'warning':
         return '⚠️';
       case 'fire':
-        return '🔥';
+        return '��';
       case 'violence':
         return '🛡️';
       default:
@@ -175,7 +175,7 @@ const SOSAlerts = () => {
               <p className="text-sm text-gray-600">Real-time emergency notifications</p>
             </div>
             <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
+              <div className={`w-3 h-3 rounded-full ${realtimeAlerts && realtimeAlerts.length > 0 ? 'bg-green-400 animate-pulse' : 'bg-gray-300'}`}></div>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
