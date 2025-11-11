@@ -290,7 +290,7 @@ const Settings = () => {
             transition={{ delay: 0.7 }}
             className="text-center text-gray-500 text-sm"
           >
-            <p>SafeGuard v1.0.0</p>
+            <p>Drishti v1.0.0</p>
             <p>Built with ❤️ for your safety</p>
           </motion.div>
         </div>
