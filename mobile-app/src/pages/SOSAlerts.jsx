@@ -81,7 +81,7 @@ const SOSAlerts = () => {
       case 'warning':
         return '⚠️';
       case 'fire':
-        return '��';
+        return '🔥';
       case 'violence':
         return '🛡️';
       default:
@@ -204,7 +204,7 @@ const SOSAlerts = () => {
                   <AlertTriangle className="w-6 h-6 text-red-600" />
                 </div>
                 <div className="text-2xl font-bold text-red-700">
-                  {allAlerts.filter(a => (a.status || 'pending') === 'active' || (a.status || 'pending') === 'pending').length}
+                  {allAlerts.filter(a => a.status === 'active' || a.status === 'pending').length}
                 </div>
                 <div className="text-xs text-gray-600">Active Alerts</div>
               </div>
