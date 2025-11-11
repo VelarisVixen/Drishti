@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 
-const clientId = '541486884869-mo97r52fhuqiurlf768qn756fpc82plq.apps.googleusercontent.com';
+const clientId = '1069463850395-r7tefqv5lucgbn9vnl322gaepqmvpb19.apps.googleusercontent.com';
 
 const decodeJwt = (token) => {
   try {
