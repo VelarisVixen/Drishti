@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
         }
       } else {
         // Check for legacy localStorage session (migration)
-        const savedUser = localStorage.getItem('safeguard_user_session');
+        const savedUser = localStorage.getItem('drishti_user_session');
         if (savedUser) {
           try {
             const parsedUser = JSON.parse(savedUser);
