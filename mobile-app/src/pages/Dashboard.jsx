@@ -227,8 +227,8 @@ const Dashboard = () => {
                     {panicProcessing && (
                       <div className="w-6 h-6 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
                     )}
-                    {realtimeStatus.firebase && (
-                      <div className="w-3 h-3 bg-green-400 rounded-full" title="Connected to Firebase"></div>
+                    {realtimeStatus.supabase && (
+                      <div className="w-3 h-3 bg-green-400 rounded-full" title="Connected to Supabase"></div>
                     )}
                   </div>
                 </div>
