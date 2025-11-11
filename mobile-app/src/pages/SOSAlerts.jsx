@@ -20,7 +20,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 
 const SOSAlerts = () => {
-  const { alertHistory, isConnected } = useDangerAlert();
   const { realtimeAlerts, panicHistory } = usePanic();
   const { firebaseUser } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
