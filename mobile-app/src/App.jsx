@@ -129,7 +129,7 @@ function App() {
   return (
     <Router>
       <Helmet>
-        <title>SafeGuard - Personal Safety Dashboard</title>
+        <title>Drishti - Personal Safety Dashboard</title>
         <meta name="description" content="Modern personal safety app with AI-powered monitoring and emergency features" />
         <meta name="theme-color" content="#fbbf24" />
       </Helmet>
