@@ -52,10 +52,10 @@ export const AuthProvider = ({ children }) => {
             const parsedUser = JSON.parse(savedUser);
             // Migrate to Firebase Auth
             await login(parsedUser);
-            localStorage.removeItem('safeguard_user_session'); // Clean up
+            localStorage.removeItem('drishti_user_session'); // Clean up
           } catch (error) {
             console.error('Error migrating user:', error);
-            localStorage.removeItem('safeguard_user_session');
+            localStorage.removeItem('drishti_user_session');
           }
         }
         setUser(null);
@@ -219,7 +219,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
 
       // Clean up any remaining localStorage
-      localStorage.removeItem('safeguard_user_session');
+      localStorage.removeItem('drishti_user_session');
 
       toast({
         title: "Goodbye! 👋",
