@@ -141,7 +141,7 @@ const Settings = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-yellow-50 to-amber-50 pb-24">
       <Helmet>
-        <title>Settings - SafeGuard</title>
+        <title>Settings - Drishti</title>
       </Helmet>
 
       {/* Decorative background */}
