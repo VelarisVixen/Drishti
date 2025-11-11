@@ -3,6 +3,7 @@ import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { toast } from '@/components/ui/use-toast';
 import { auth, db, createOrUpdateUser, getUser, COLLECTIONS } from '@/lib/firebase';
+import { ensureSupabaseUser } from '@/lib/supabaseClient';
 
 const AuthContext = createContext();
 
@@ -116,6 +117,22 @@ export const AuthProvider = ({ children }) => {
         try {
           await createOrUpdateUser(userId, finalUserData);
           console.log('✅ User successfully saved to Firebase');
+          // Supabase first-login sync (Firebase branch)
+          try {
+            console.log('[Supabase] Initiating first-login sync for user:', userId);
+            const supabasePayload = {
+              user_id: userId,
+              name: finalUserData.name,
+              email: finalUserData.email,
+              phone: finalUserData.phone,
+              role: finalUserData.role || 'citizen'
+            };
+            console.log('[Supabase] Payload prepared:', supabasePayload);
+            const result = await ensureSupabaseUser(supabasePayload);
+            console.log('[Supabase] ensureSupabaseUser result:', result);
+          } catch (e) {
+            console.error('[Supabase] First-login sync failed (Firebase branch):', e);
+          }
         } catch (firestoreError) {
           console.warn('⚠️ Firestore save failed:', firestoreError.message);
           // Continue with Firebase Auth but without Firestore
@@ -159,6 +176,22 @@ export const AuthProvider = ({ children }) => {
       }
 
       console.log('✅ User successfully created');
+      // Supabase first-login sync (final safeguard - runs in both branches)
+      try {
+        console.log('[Supabase] Preparing first-login sync payload (final)...');
+        const supabasePayload = {
+          user_id: finalUserData.id,
+          name: finalUserData.name,
+          email: finalUserData.email,
+          phone: finalUserData.phone,
+          role: finalUserData.role || 'citizen'
+        };
+        console.log('[Supabase] Final payload:', supabasePayload);
+        const result = await ensureSupabaseUser(supabasePayload);
+        console.log('[Supabase] Final ensureSupabaseUser result:', result);
+      } catch (e) {
+        console.error('[Supabase] Final first-login sync failed:', e);
+      }
       return finalUserData;
     } catch (error) {
       console.error('❌ Login error:', error);
