@@ -25,6 +25,7 @@ import { usePanic } from '@/contexts/PanicContext';
 import { useDangerAlert } from '@/contexts/DangerAlertContext';
 import PanicButton from '@/components/PanicButton';
 import DangerAlert from '@/components/DangerAlert';
+import { supabase } from '@/lib/supabaseClient';
 
 const Dashboard = () => {
   const { userProfile, firebaseUser, logout } = useAuth();
