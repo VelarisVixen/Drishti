@@ -287,13 +287,13 @@ const SOSHistory = () => {
                           <AlertTriangle className="w-6 h-6 text-red-600" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-800">Emergency Alert #{alert.id.slice(-4)}</h3>
+                          <h3 className="font-semibold text-gray-800">Emergency Alert #{String(alert.id ?? '').slice(-4) || alert.id}</h3>
                           <p className="text-sm text-gray-600">{formatTimeAgo(alert.timestamp)}</p>
                         </div>
                       </div>
                       
                       <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(alert.status)}`}>
-                        {alert.status.toUpperCase()}
+                        {(alert.status || '').toUpperCase()}
                       </span>
                     </div>
                     
