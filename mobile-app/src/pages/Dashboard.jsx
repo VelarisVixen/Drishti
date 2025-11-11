@@ -52,11 +52,11 @@ const Dashboard = () => {
   // Monitor real-time connection status
   useEffect(() => {
     setRealtimeStatus({
-      sosAlerts: !!firebaseUser && panicHistory.length >= 0, // Connected if we have a user and history loaded
+      sosAlerts: panicHistory.length >= 0, // Connected if history loaded
       dangerAlerts: dangerAlertsConnected,
-      firebase: !!firebaseUser
+      supabase: !!supabase
     });
-  }, [firebaseUser, panicHistory, dangerAlertsConnected]);
+  }, [panicHistory, dangerAlertsConnected]);
 
   const formatLastChecked = (date) => {
     const now = new Date();
