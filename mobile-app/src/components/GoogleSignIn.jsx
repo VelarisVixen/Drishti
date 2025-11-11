@@ -25,7 +25,7 @@ const base64UrlEncode = (arrayBuffer) => {
   return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
-const clientId = '541486884869-mo97r52fhuqiurlf768qn756fpc82plq.apps.googleusercontent.com';
+const clientId = '1069463850395-r7tefqv5lucgbn9vnl322gaepqmvpb19.apps.googleusercontent.com';
 
 const GoogleSignIn = ({ className }) => {
   const startAuth = async () => {
