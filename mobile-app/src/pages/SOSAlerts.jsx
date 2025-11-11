@@ -147,7 +147,7 @@ const SOSAlerts = () => {
 
   const filteredAlerts = allAlerts.filter(alert => {
     if (filter === 'all') return true;
-    return (alert.severity || 'medium') === filter || (alert.status || 'pending') === filter;
+    return alert.severity === filter || alert.status === filter;
   });
 
   return (
