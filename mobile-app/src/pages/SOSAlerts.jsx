@@ -15,7 +15,6 @@ import {
   Wifi,
   Eye
 } from 'lucide-react';
-import { useDangerAlert } from '@/contexts/DangerAlertContext';
 import { usePanic } from '@/contexts/PanicContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
