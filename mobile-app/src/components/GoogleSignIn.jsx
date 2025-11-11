@@ -61,10 +61,12 @@ const GoogleSignIn = ({ className }) => {
   };
 
   return (
-    <button onClick={startAuth} className={`flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl shadow-sm ${className || ''}`}>
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
-      <span>Sign in with Google</span>
-    </button>
+    <div className={`w-full flex justify-center`}>
+      <button onClick={startAuth} className={`flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl shadow-sm ${className || ''}`}>
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+        <span>Sign in with Google</span>
+      </button>
+    </div>
   );
 };
 
