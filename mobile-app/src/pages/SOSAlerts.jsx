@@ -221,7 +221,7 @@ const SOSAlerts = () => {
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
                 <div className="text-2xl font-bold text-green-700">
-                  {allAlerts.filter(a => (a.status || 'pending') === 'resolved' || (a.status || 'pending') === 'completed').length}
+                  {allAlerts.filter(a => a.status === 'resolved' || a.status === 'completed').length}
                 </div>
                 <div className="text-xs text-gray-600">Resolved</div>
               </div>
