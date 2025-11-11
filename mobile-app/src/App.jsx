@@ -12,6 +12,8 @@ import Dashboard from '@/pages/Dashboard';
 import SOSAlerts from '@/pages/SOSAlerts';
 import Settings from '@/pages/Settings';
 import SOSHistory from '@/pages/SOSHistory';
+import Welcome from '@/pages/Welcome';
+import AuthCallback from '@/pages/AuthCallback';
 import BottomNavigation from '@/components/BottomNavigation';
 
 // Protected Route Component
@@ -63,6 +65,9 @@ const AppRoutes = () => {
           </PublicRoute>
         }
       />
+
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/welcome" element={<Welcome />} />
 
       {/* Protected routes with shared layout */}
       <Route
