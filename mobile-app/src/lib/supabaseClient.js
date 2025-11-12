@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
+import { createClient } from '@supabase/supabase-js';
+
 // Initialize Supabase client using env variables (do NOT log secrets)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -8,8 +10,36 @@ console.log('[Supabase] Initializing client...');
 if (!supabaseUrl) console.error('[Supabase] Missing VITE_SUPABASE_URL');
 if (!supabaseAnonKey) console.error('[Supabase] Missing VITE_SUPABASE_ANON_KEY');
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
-console.log('[Supabase] Client initialized:', { urlPresent: !!supabaseUrl, keyPresent: !!supabaseAnonKey });
+let _supabase = null;
+try {
+  if (supabaseUrl && supabaseAnonKey) {
+    _supabase = createClient(supabaseUrl, supabaseAnonKey);
+    console.log('[Supabase] Client initialized:', { urlPresent: true, keyPresent: true });
+  } else {
+    throw new Error('Missing Supabase env');
+  }
+} catch (e) {
+  console.warn('[Supabase] Failed to initialize real client, creating stub client. Reason:', e.message || e);
+  // Minimal stub implementation to avoid runtime crashes in environments without env vars
+  const noop = async () => ({ data: null, error: { message: 'Supabase not configured' } });
+  const chainable = () => ({ select: noop, eq: () => ({ maybeSingle: noop }), maybeSingle: noop, order: () => ({ limit: noop }), limit: noop, insert: noop });
+  _supabase = {
+    from: (/*table*/) => chainable(),
+    storage: {
+      from: (/*bucket*/) => ({
+        upload: async () => ({ data: null, error: { message: 'Supabase storage not configured' } }),
+        getPublicUrl: () => ({ publicUrl: null })
+      })
+    },
+    channel: () => ({
+      on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
+      subscribe: () => ({}),
+      unsubscribe: () => {}
+    })
+  };
+}
+
+export const supabase = _supabase;
 
 // Helper: ensure user exists in public.users table on first login
 // Expected shape: { user_id: string, name: string, email: string, phone: string, role?: string }
