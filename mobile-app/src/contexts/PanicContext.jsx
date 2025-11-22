@@ -300,13 +300,13 @@ export const PanicProvider = ({ children }) => {
           console.log('[Panic] Supabase insert payload (firebase):', insertPayload);
           const { data: insertData, error: insertError } = await supabase.from('sos_alerts').insert([insertPayload]).select('id');
           if (insertError) {
-            console.warn('[Panic] Supabase insert (firebase) error:', insertError);
+            console.warn('[Panic] ❌ Supabase insert (firebase) error:', insertError.message || insertError);
           } else {
             supabaseInsertId = insertData?.[0]?.id;
-            console.log('[Panic] Supabase insert (firebase) success, id=', supabaseInsertId);
+            console.log('[Panic] ✅ Supabase insert (firebase) success, id=', supabaseInsertId);
           }
         } catch (e) {
-          console.error('[Panic] Supabase insert (firebase) failed:', e);
+          console.error('[Panic] ❌ Supabase insert (firebase) failed:', e.message || e);
         }
       }
 
