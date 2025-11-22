@@ -270,7 +270,7 @@ export const PanicProvider = ({ children }) => {
 
         // Also insert a record into Supabase for analytics/backend if possible
         try {
-          console.log('[Panic] Inserting SOS alert into Supabase table (local mode)...');
+          console.log('[Panic] 💾 Inserting SOS alert into Supabase sos_alerts table (local mode)...');
           const insertPayload = {
             user_id: firebaseUser.uid,
             message: sosAlertData.message,
@@ -281,13 +281,16 @@ export const PanicProvider = ({ children }) => {
             status: 'pending',
             // Leave gemini and analysis fields null by design
           };
-          console.log('[Panic] Supabase insert payload (local):', insertPayload);
+          console.log('[Panic] 📤 Supabase insert payload (local mode):', {
+            ...insertPayload,
+            video_url: insertPayload.video_url ? '✅ HAS VIDEO URL' : '❌ NO VIDEO URL'
+          });
           const { data: insertData, error: insertError } = await supabase.from('sos_alerts').insert([insertPayload]).select('id');
           if (insertError) {
             console.warn('[Panic] ❌ Supabase insert (local) error:', insertError.message || insertError);
           } else {
             supabaseInsertId = insertData?.[0]?.id;
-            console.log('[Panic] ✅ Supabase insert (local) success, id=', supabaseInsertId);
+            console.log('[Panic] ✅ Supabase insert (local) success, alert id=', supabaseInsertId, 'with video:', !!insertPayload.video_url);
           }
         } catch (e) {
           console.error('[Panic] ❌ Supabase insert (local) failed:', e.message || e);
