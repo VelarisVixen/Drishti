@@ -173,16 +173,18 @@ export const PanicProvider = ({ children }) => {
       // Upload video to Supabase Storage (preferred) then fallback to Firebase if needed
       let videoData = { videoUrl: null, videoThumbnail: null, videoDuration: 0, uploadedTo: null };
       if (stream) {
+        console.log('[Panic] Stream object available, starting video recording and upload...');
         // First attempt: Supabase upload
         try {
           console.log('[Panic] Attempting to upload stream to Supabase storage...');
-          toast({ title: "Uploading Video...", description: "Recording and uploading your emergency video to Supabase..." });
+          toast({ title: "Recording Video...", description: "Recording your emergency video for 15 seconds..." });
           const supaResult = await uploadStreamToSupabase(stream, firebaseUser.uid, { bucket: 'first_bucket', durationMs: 15000 });
           videoData.videoUrl = supaResult.videoUrl || null;
           videoData.uploadedTo = 'supabase';
-          console.log('[Panic] Supabase upload success, videoUrl=', videoData.videoUrl);
+          console.log('[Panic] ✅ Supabase upload success, videoUrl=', videoData.videoUrl);
+          toast({ title: "Video Uploaded!", description: "Your emergency video has been successfully uploaded to Supabase." });
         } catch (supaError) {
-          console.warn('[Panic] Supabase upload failed:', supaError?.message || supaError);
+          console.warn('[Panic] ❌ Supabase upload failed:', supaError?.message || supaError);
 
           // Fallback: try Firebase upload (existing behavior)
           try {
@@ -191,7 +193,7 @@ export const PanicProvider = ({ children }) => {
             const fbResult = await uploadVideoAndGetURL(stream, firebaseUser.uid);
             videoData.videoUrl = fbResult.videoUrl || null;
             videoData.uploadedTo = 'firebase';
-            console.log('[Panic] Firebase upload success, videoUrl=', videoData.videoUrl);
+            console.log('[Panic] ✅ Firebase upload success, videoUrl=', videoData.videoUrl);
           } catch (videoError) {
             console.warn('⚠️ Both Supabase and Firebase video uploads failed, continuing without video:', videoError?.message || videoError);
             toast({
@@ -202,6 +204,8 @@ export const PanicProvider = ({ children }) => {
             // Continue with empty video data
           }
         }
+      } else {
+        console.warn('[Panic] ⚠️ No stream available, SOS alert will be sent without video');
       }
 
       const deviceInfo = getDeviceInfo();
