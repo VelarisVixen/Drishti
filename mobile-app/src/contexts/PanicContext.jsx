@@ -252,13 +252,13 @@ export const PanicProvider = ({ children }) => {
           console.log('[Panic] Supabase insert payload (local):', insertPayload);
           const { data: insertData, error: insertError } = await supabase.from('sos_alerts').insert([insertPayload]).select('id');
           if (insertError) {
-            console.warn('[Panic] Supabase insert (local) error:', insertError);
+            console.warn('[Panic] ❌ Supabase insert (local) error:', insertError.message || insertError);
           } else {
             supabaseInsertId = insertData?.[0]?.id;
-            console.log('[Panic] Supabase insert (local) success, id=', supabaseInsertId);
+            console.log('[Panic] ✅ Supabase insert (local) success, id=', supabaseInsertId);
           }
         } catch (e) {
-          console.error('[Panic] Supabase insert (local) failed:', e);
+          console.error('[Panic] ❌ Supabase insert (local) failed:', e.message || e);
         }
       } else {
         // Save to Firestore (real-time)
