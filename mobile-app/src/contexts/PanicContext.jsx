@@ -172,40 +172,59 @@ export const PanicProvider = ({ children }) => {
 
       // Upload video to Supabase Storage (preferred) then fallback to Firebase if needed
       let videoData = { videoUrl: null, videoThumbnail: null, videoDuration: 0, uploadedTo: null };
-      if (stream) {
-        console.log('[Panic] Stream object available, starting video recording and upload...');
+      if (!stream) {
+        console.error('[Panic] ❌ CRITICAL: No stream object available for video recording');
+        toast({
+          title: "Video Recording Failed",
+          description: "No stream available. Camera permission may have been denied.",
+          variant: "destructive",
+          duration: 5000
+        });
+      } else {
+        console.log('[Panic] ✅ Stream object available, starting video recording and upload...');
         // First attempt: Supabase upload
         try {
-          console.log('[Panic] Attempting to upload stream to Supabase storage...');
+          console.log('[Panic] 🎥 Attempting to record and upload stream to Supabase storage...');
           toast({ title: "Recording Video...", description: "Recording your emergency video for 15 seconds..." });
           const supaResult = await uploadStreamToSupabase(stream, firebaseUser.uid, { bucket: 'first_bucket', durationMs: 15000 });
-          videoData.videoUrl = supaResult.videoUrl || null;
+
+          if (!supaResult.videoUrl) {
+            throw new Error('Upload completed but no video URL returned');
+          }
+
+          videoData.videoUrl = supaResult.videoUrl;
           videoData.uploadedTo = 'supabase';
-          console.log('[Panic] ✅ Supabase upload success, videoUrl=', videoData.videoUrl);
-          toast({ title: "Video Uploaded!", description: "Your emergency video has been successfully uploaded to Supabase." });
+          console.log('[Panic] ✅ Supabase upload SUCCESS, videoUrl=', videoData.videoUrl);
+          toast({ title: "✅ Video Uploaded!", description: "Your emergency video has been successfully uploaded to Supabase." });
         } catch (supaError) {
-          console.warn('[Panic] ❌ Supabase upload failed:', supaError?.message || supaError);
+          console.error('[Panic] ❌ Supabase upload FAILED:', supaError?.message || supaError);
+          console.log('[Panic] Attempting Firebase fallback...');
 
           // Fallback: try Firebase upload (existing behavior)
           try {
-            console.log('[Panic] Falling back to Firebase upload...');
-            toast({ title: "Uploading Video...", description: "Falling back to Firebase for video upload..." });
+            console.log('[Panic] 📱 Falling back to Firebase upload...');
+            toast({ title: "Uploading Video (Firebase)...", description: "Recording and uploading to Firebase..." });
             const fbResult = await uploadVideoAndGetURL(stream, firebaseUser.uid);
-            videoData.videoUrl = fbResult.videoUrl || null;
+
+            if (!fbResult.videoUrl) {
+              throw new Error('Firebase upload completed but no URL returned');
+            }
+
+            videoData.videoUrl = fbResult.videoUrl;
             videoData.uploadedTo = 'firebase';
-            console.log('[Panic] ✅ Firebase upload success, videoUrl=', videoData.videoUrl);
+            console.log('[Panic] ✅ Firebase upload SUCCESS, videoUrl=', videoData.videoUrl);
+            toast({ title: "✅ Video Uploaded (Firebase)!", description: "Your emergency video has been uploaded to Firebase." });
           } catch (videoError) {
-            console.warn('⚠️ Both Supabase and Firebase video uploads failed, continuing without video:', videoError?.message || videoError);
+            console.error('[Panic] ❌ CRITICAL: Both Supabase AND Firebase video uploads FAILED:', videoError?.message || videoError);
             toast({
-              title: "Video Upload Failed",
-              description: "SOS alert will be sent without video. Emergency services will still be notified.",
-              duration: 5000
+              title: "❌ Video Upload Failed",
+              description: "SOS alert will be sent WITHOUT video. Emergency response may be delayed.",
+              variant: "destructive",
+              duration: 6000
             });
-            // Continue with empty video data
+            // Continue with empty video data - this is the last resort
           }
         }
-      } else {
-        console.warn('[Panic] ⚠️ No stream available, SOS alert will be sent without video');
       }
 
       const deviceInfo = getDeviceInfo();
@@ -259,7 +278,7 @@ export const PanicProvider = ({ children }) => {
             console.warn('[Panic] ❌ Supabase insert (local) error:', insertError.message || insertError);
           } else {
             supabaseInsertId = insertData?.[0]?.id;
-            console.log('[Panic] ✅ Supabase insert (local) success, id=', supabaseInsertId);
+            console.log('[Panic] �� Supabase insert (local) success, id=', supabaseInsertId);
           }
         } catch (e) {
           console.error('[Panic] ❌ Supabase insert (local) failed:', e.message || e);
@@ -473,7 +492,7 @@ export const PanicProvider = ({ children }) => {
   };
 
   const resetButtonState = () => {
-    console.log('🔄 Manually resetting button state');
+    console.log('���� Manually resetting button state');
     if (window.panicButtonTimeout) {
       clearTimeout(window.panicButtonTimeout);
       window.panicButtonTimeout = null;
