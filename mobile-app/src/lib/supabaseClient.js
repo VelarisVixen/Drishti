@@ -144,6 +144,7 @@ export async function uploadStreamToSupabase(stream, userId, options = {}) {
 
   // Record stream to blob
   const blob = await recordStreamToBlob(stream, durationMs);
+  console.log('[Supabase] Video blob created, size=', blob.size, 'bytes');
 
   const fileName = `sos-videos/${userId}_${Date.now()}.mp4`;
   console.log('[Supabase] Uploading video file to bucket, fileName=', fileName);
@@ -154,11 +155,11 @@ export async function uploadStreamToSupabase(stream, userId, options = {}) {
       .upload(fileName, blob, { cacheControl: '3600', upsert: false });
 
     if (uploadError) {
-      console.error('[Supabase] upload error:', uploadError);
+      console.error('[Supabase] ❌ Upload error:', uploadError.message || uploadError);
       throw uploadError;
     }
 
-    console.log('[Supabase] Upload response:', uploadData);
+    console.log('[Supabase] ✅ Upload response:', uploadData);
 
     // Get public URL
     const { data: publicUrlData, error: publicUrlError } = supabase.storage
@@ -166,15 +167,15 @@ export async function uploadStreamToSupabase(stream, userId, options = {}) {
       .getPublicUrl(fileName);
 
     if (publicUrlError) {
-      console.error('[Supabase] getPublicUrl error:', publicUrlError);
+      console.error('[Supabase] ❌ getPublicUrl error:', publicUrlError.message || publicUrlError);
       throw publicUrlError;
     }
 
-    console.log('[Supabase] Public URL obtained:', publicUrlData?.publicUrl || publicUrlData);
+    console.log('[Supabase] ✅ Public URL obtained:', publicUrlData?.publicUrl || publicUrlData);
     const publicUrl = (publicUrlData && (publicUrlData.publicUrl || publicUrlData.public_url)) || null;
     return { videoUrl: publicUrl, raw: uploadData };
   } catch (e) {
-    console.error('[Supabase] uploadStreamToSupabase failed:', e);
+    console.error('[Supabase] ❌ uploadStreamToSupabase failed:', e.message || e);
     throw e;
   }
 }
