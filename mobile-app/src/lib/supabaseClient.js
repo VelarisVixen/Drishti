@@ -182,12 +182,22 @@ export async function uploadStreamToSupabase(stream, userId, options = {}) {
   const durationMs = options.durationMs || 15000;
   console.log('[Supabase] uploadStreamToSupabase() starting for user=', userId, 'bucket=', bucket);
 
+  // Validate stream
+  if (!stream) {
+    throw new Error('Stream is required for video upload');
+  }
+
   // Record stream to blob
   const blob = await recordStreamToBlob(stream, durationMs);
-  console.log('[Supabase] Video blob created, size=', blob.size, 'bytes');
+  console.log('[Supabase] Video blob created, size=', blob.size, 'bytes, type=', blob.type);
+
+  // Validate blob size
+  if (blob.size < 1000) {
+    console.warn('[Supabase] ⚠️ Warning: Video blob is very small (', blob.size, 'bytes), recording may have failed');
+  }
 
   const fileName = `sos-videos/${userId}_${Date.now()}.mp4`;
-  console.log('[Supabase] Uploading video file to bucket, fileName=', fileName);
+  console.log('[Supabase] Uploading video file to bucket, fileName=', fileName, 'size=', blob.size);
 
   try {
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -211,8 +221,8 @@ export async function uploadStreamToSupabase(stream, userId, options = {}) {
       throw publicUrlError;
     }
 
-    console.log('[Supabase] ✅ Public URL obtained:', publicUrlData?.publicUrl || publicUrlData);
     const publicUrl = (publicUrlData && (publicUrlData.publicUrl || publicUrlData.public_url)) || null;
+    console.log('[Supabase] ✅ Video uploaded successfully, URL=', publicUrl, 'size=', blob.size);
     return { videoUrl: publicUrl, raw: uploadData };
   } catch (e) {
     console.error('[Supabase] ❌ uploadStreamToSupabase failed:', e.message || e);
