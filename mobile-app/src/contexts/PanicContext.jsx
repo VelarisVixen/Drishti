@@ -242,6 +242,15 @@ export const PanicProvider = ({ children }) => {
         }
       };
 
+      console.log('[Panic] 📋 SOS Alert Data Summary:', {
+        userId: sosAlertData.userId,
+        hasVideo: !!sosAlertData.videoUrl,
+        videoUrl: sosAlertData.videoUrl || 'NO VIDEO',
+        uploadedTo: videoData.uploadedTo,
+        location: sosAlertData.location,
+        message: sosAlertData.message
+      });
+
       let alertId;
 
       // Prepare to persist alert to Supabase sos_alerts table as well as existing Firebase/local flows
@@ -278,7 +287,7 @@ export const PanicProvider = ({ children }) => {
             console.warn('[Panic] ❌ Supabase insert (local) error:', insertError.message || insertError);
           } else {
             supabaseInsertId = insertData?.[0]?.id;
-            console.log('[Panic] �� Supabase insert (local) success, id=', supabaseInsertId);
+            console.log('[Panic] ✅ Supabase insert (local) success, id=', supabaseInsertId);
           }
         } catch (e) {
           console.error('[Panic] ❌ Supabase insert (local) failed:', e.message || e);
@@ -492,7 +501,7 @@ export const PanicProvider = ({ children }) => {
   };
 
   const resetButtonState = () => {
-    console.log('���� Manually resetting button state');
+    console.log('🔄 Manually resetting button state');
     if (window.panicButtonTimeout) {
       clearTimeout(window.panicButtonTimeout);
       window.panicButtonTimeout = null;
