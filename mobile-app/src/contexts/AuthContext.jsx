@@ -188,13 +188,14 @@ export const AuthProvider = ({ children }) => {
         };
         console.log('[Supabase] Final payload:', supabasePayload);
         const result = await ensureSupabaseUser(supabasePayload);
-        console.log('[Supabase] Final ensureSupabaseUser result:', result);
+        console.log('[Supabase] ✅ User successfully synced to Supabase users table:', result);
       } catch (e) {
-        console.error('[Supabase] Final first-login sync failed:', e);
+        console.error('[Supabase] ❌ Final first-login sync failed:', e.message || e);
+        // Don't fail the entire login if Supabase sync fails - the app can still work with Firebase
       }
       return finalUserData;
     } catch (error) {
-      console.error('❌ Login error:', error);
+      console.error('�� Login error:', error);
 
       toast({
         title: "Login Failed",
