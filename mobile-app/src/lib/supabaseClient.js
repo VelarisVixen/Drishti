@@ -18,11 +18,50 @@ try {
   }
 } catch (e) {
   console.warn('[Supabase] Failed to initialize real client, creating stub client. Reason:', e.message || e);
-  // Minimal stub implementation to avoid runtime crashes in environments without env vars
-  const noop = async () => ({ data: null, error: { message: 'Supabase not configured' } });
-  const chainable = () => ({ select: noop, eq: () => ({ maybeSingle: noop }), maybeSingle: noop, order: () => ({ limit: noop }), limit: noop, insert: noop });
+
+  // Create a fully chainable stub that supports all query methods
+  const createChainableStub = () => {
+    const stub = {
+      select: () => stub,
+      insert: () => stub,
+      update: () => stub,
+      delete: () => stub,
+      order: () => stub,
+      limit: () => stub,
+      eq: () => stub,
+      neq: () => stub,
+      gt: () => stub,
+      gte: () => stub,
+      lt: () => stub,
+      lte: () => stub,
+      like: () => stub,
+      ilike: () => stub,
+      in: () => stub,
+      contains: () => stub,
+      containedBy: () => stub,
+      range: () => stub,
+      rangeLte: () => stub,
+      rangeGte: () => stub,
+      rangeAdjacent: () => stub,
+      overlaps: () => stub,
+      textSearch: () => stub,
+      match: () => stub,
+      not: () => stub,
+      or: () => stub,
+      and: () => stub,
+      filter: () => stub,
+      maybeSingle: async () => ({ data: null, error: { message: 'Supabase not configured' } }),
+      single: async () => ({ data: null, error: { message: 'Supabase not configured' } }),
+      then: (resolve) => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+      catch: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+      // Make it compatible with Promise
+      [Symbol.toStringTag]: 'Promise'
+    };
+    return stub;
+  };
+
   _supabase = {
-    from: (/*table*/) => chainable(),
+    from: (/*table*/) => createChainableStub(),
     storage: {
       from: (/*bucket*/) => ({
         upload: async () => ({ data: null, error: { message: 'Supabase storage not configured' } }),
