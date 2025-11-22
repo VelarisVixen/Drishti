@@ -108,29 +108,69 @@ const recordStreamToBlob = (stream, durationMs = 15000) => {
   console.log('[Supabase] recordStreamToBlob() called with durationMs=', durationMs);
   return new Promise((resolve, reject) => {
     try {
-      const mediaRecorder = new MediaRecorder(stream);
+      // Check if stream is valid
+      const audioTracks = stream.getAudioTracks();
+      const videoTracks = stream.getVideoTracks();
+      console.log('[Supabase] Stream tracks - audio:', audioTracks.length, 'video:', videoTracks.length);
+
+      if (videoTracks.length === 0) {
+        throw new Error('No video tracks available in stream');
+      }
+
+      // Use the appropriate MIME type based on browser support
+      let mimeType = 'video/webm;codecs=vp8,opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm;codecs=vp8';
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm';
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/mp4';
+      }
+
+      console.log('[Supabase] Using MIME type:', mimeType);
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       const chunks = [];
       let timeout;
 
-      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          console.log('[Supabase] Data chunk received, size=', e.data.size);
+          chunks.push(e.data);
+        }
+      };
+
       mediaRecorder.onstop = () => {
         clearTimeout(timeout);
-        const blob = new Blob(chunks, { type: 'video/mp4' });
-        console.log('[Supabase] Recording complete, blob size=', blob.size);
+        console.log('[Supabase] Recorder stopped, total chunks=', chunks.length);
+        const blob = new Blob(chunks, { type: mimeType });
+        console.log('[Supabase] ✅ Recording complete, blob size=', blob.size, 'bytes');
+        if (blob.size === 0) {
+          console.warn('[Supabase] ⚠️ Warning: blob size is 0, recording may have failed');
+        }
         resolve(blob);
       };
+
       mediaRecorder.onerror = (e) => {
         clearTimeout(timeout);
-        console.error('[Supabase] mediaRecorder error', e);
+        console.error('[Supabase] ❌ mediaRecorder error:', e.error || e);
         reject(e);
       };
 
-      mediaRecorder.start();
+      // Start recording with timeslice to ensure data is periodically available
+      mediaRecorder.start(1000); // Request data every 1 second
+      console.log('[Supabase] Recording started, will stop in', durationMs, 'ms');
+
       timeout = setTimeout(() => {
-        if (mediaRecorder.state === 'recording') mediaRecorder.stop();
+        if (mediaRecorder.state === 'recording') {
+          console.log('[Supabase] Stopping recording due to timeout');
+          mediaRecorder.stop();
+        }
       }, durationMs);
     } catch (e) {
-      console.error('[Supabase] recordStreamToBlob failed:', e);
+      console.error('[Supabase] ❌ recordStreamToBlob failed:', e.message || e);
       reject(e);
     }
   });
