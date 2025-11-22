@@ -248,16 +248,17 @@ export async function uploadStreamToSupabase(stream, userId, options = {}) {
   }
 
   // Record stream to blob
+  console.log('[Supabase] ⏹️ Starting video recording...');
   const blob = await recordStreamToBlob(stream, durationMs);
-  console.log('[Supabase] Video blob created, size=', blob.size, 'bytes, type=', blob.type);
+  console.log('[Supabase] ✅ Video blob created, size=', blob.size, 'bytes, type=', blob.type);
 
-  // Validate blob size
-  if (blob.size < 1000) {
-    console.warn('[Supabase] ⚠️ Warning: Video blob is very small (', blob.size, 'bytes), recording may have failed');
+  // Validate blob size - must have actual video data
+  if (blob.size < 5000) {
+    throw new Error(`Video recording failed: blob too small (${blob.size} bytes). Ensure camera has permission and is working.`);
   }
 
-  const fileName = `sos-videos/${userId}_${Date.now()}.mp4`;
-  console.log('[Supabase] Uploading video file to bucket, fileName=', fileName, 'size=', blob.size);
+  const fileName = `sos-videos/${userId}_${Date.now()}.webm`;
+  console.log('[Supabase] 📤 Uploading video file to bucket "', bucket, '", fileName=', fileName, 'size=', blob.size);
 
   try {
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -266,23 +267,31 @@ export async function uploadStreamToSupabase(stream, userId, options = {}) {
 
     if (uploadError) {
       console.error('[Supabase] ❌ Upload error:', uploadError.message || uploadError);
-      throw uploadError;
+      throw new Error(`Upload failed: ${uploadError.message || uploadError}`);
     }
 
-    console.log('[Supabase] ✅ Upload response:', uploadData);
+    console.log('[Supabase] ✅ Upload to storage successful:', uploadData);
 
     // Get public URL
-    const { data: publicUrlData, error: publicUrlError } = supabase.storage
+    console.log('[Supabase] 🔗 Getting public URL for file:', fileName);
+    const urlData = supabase.storage
       .from(bucket)
       .getPublicUrl(fileName);
 
-    if (publicUrlError) {
-      console.error('[Supabase] ❌ getPublicUrl error:', publicUrlError.message || publicUrlError);
-      throw publicUrlError;
+    // getPublicUrl returns { data: { publicUrl: string }, error: null } or { data: null, error: {...} }
+    let publicUrl = null;
+    if (urlData && urlData.data) {
+      publicUrl = urlData.data.publicUrl;
     }
 
-    const publicUrl = (publicUrlData && (publicUrlData.publicUrl || publicUrlData.public_url)) || null;
-    console.log('[Supabase] ✅ Video uploaded successfully, URL=', publicUrl, 'size=', blob.size);
+    console.log('[Supabase] Public URL response:', urlData);
+    console.log('[Supabase] Extracted publicUrl:', publicUrl);
+
+    if (!publicUrl) {
+      throw new Error('Failed to get public URL for uploaded video');
+    }
+
+    console.log('[Supabase] ✅ Video uploaded successfully, URL=', publicUrl, 'size=', blob.size, 'bytes');
     return { videoUrl: publicUrl, raw: uploadData };
   } catch (e) {
     console.error('[Supabase] ❌ uploadStreamToSupabase failed:', e.message || e);
