@@ -156,6 +156,12 @@ const recordStreamToBlob = (stream, durationMs = 15000) => {
         throw new Error('No video tracks available in stream');
       }
 
+      // Check track states
+      const videoTrack = videoTracks[0];
+      if (videoTrack.readyState !== 'live') {
+        throw new Error(`Video track not live, state: ${videoTrack.readyState}`);
+      }
+
       // Use the appropriate MIME type based on browser support
       let mimeType = 'video/webm;codecs=vp8,opus';
       if (!MediaRecorder.isTypeSupported(mimeType)) {
@@ -168,43 +174,58 @@ const recordStreamToBlob = (stream, durationMs = 15000) => {
         mimeType = 'video/mp4';
       }
 
-      console.log('[Supabase] Using MIME type:', mimeType);
+      console.log('[Supabase] Using MIME type:', mimeType, 'for', durationMs, 'ms recording');
 
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 128000, videoBitsPerSecond: 2500000 });
       const chunks = [];
       let timeout;
+      let recordingStarted = false;
+
+      mediaRecorder.onstart = () => {
+        recordingStarted = true;
+        console.log('[Supabase] MediaRecorder started successfully');
+      };
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
-          console.log('[Supabase] Data chunk received, size=', e.data.size);
+          console.log('[Supabase] Data chunk received, size=', e.data.size, 'bytes');
           chunks.push(e.data);
         }
       };
 
       mediaRecorder.onstop = () => {
         clearTimeout(timeout);
-        console.log('[Supabase] Recorder stopped, total chunks=', chunks.length);
+        console.log('[Supabase] Recorder stopped, total chunks=', chunks.length, 'recordingStarted=', recordingStarted);
         const blob = new Blob(chunks, { type: mimeType });
-        console.log('[Supabase] ✅ Recording complete, blob size=', blob.size, 'bytes');
+        console.log('[Supabase] ✅ Recording complete, blob size=', blob.size, 'bytes, type=', blob.type);
+
         if (blob.size === 0) {
-          console.warn('[Supabase] ⚠️ Warning: blob size is 0, recording may have failed');
+          console.error('[Supabase] ❌ ERROR: blob size is 0, recording failed completely');
+          reject(new Error('Video recording produced empty blob'));
+          return;
         }
+
+        if (blob.size < 5000) {
+          console.warn('[Supabase] ⚠️ Warning: blob is very small (', blob.size, 'bytes), may indicate recording issue');
+        }
+
         resolve(blob);
       };
 
       mediaRecorder.onerror = (e) => {
         clearTimeout(timeout);
         console.error('[Supabase] ❌ mediaRecorder error:', e.error || e);
-        reject(e);
+        reject(new Error(`MediaRecorder error: ${e.error || e}`));
       };
 
       // Start recording with timeslice to ensure data is periodically available
-      mediaRecorder.start(1000); // Request data every 1 second
+      console.log('[Supabase] Starting MediaRecorder.start() with 500ms timeslice');
+      mediaRecorder.start(500); // Request data every 500ms for better capture
       console.log('[Supabase] Recording started, will stop in', durationMs, 'ms');
 
       timeout = setTimeout(() => {
+        console.log('[Supabase] Recording timeout reached, stopping recorder');
         if (mediaRecorder.state === 'recording') {
-          console.log('[Supabase] Stopping recording due to timeout');
           mediaRecorder.stop();
         }
       }, durationMs);
