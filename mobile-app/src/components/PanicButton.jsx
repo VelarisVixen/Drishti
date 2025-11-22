@@ -77,9 +77,26 @@ const PanicButton = () => {
   }, [showConfirmation, setIsProcessing]);
 
   const confirmPanic = async () => {
-    await activatePanic(message, streamRef.current);
-    setMessage(''); // Reset message for next use
-    setShowConfirmation(false); // This will trigger cleanup in useEffect
+    try {
+      // Keep stream reference during recording
+      const currentStream = streamRef.current;
+      if (!currentStream) {
+        throw new Error('No active stream available');
+      }
+      console.log('[PanicButton] Starting panic activation with stream');
+
+      // Call activatePanic but don't close dialog until it completes
+      await activatePanic(message, currentStream);
+
+      console.log('[PanicButton] Panic activation complete');
+      setMessage(''); // Reset message for next use
+    } catch (error) {
+      console.error('[PanicButton] Error during panic activation:', error);
+      // Error is already handled in activatePanic with toast
+    } finally {
+      // Only close dialog after recording/upload is complete
+      setShowConfirmation(false); // This will trigger cleanup in useEffect
+    }
   };
 
   const cancelPanic = () => {
