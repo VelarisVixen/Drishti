@@ -96,10 +96,17 @@ const PanicButton = () => {
 
   const confirmPanic = async () => {
     try {
-      // Keep stream reference during recording
+      // Close confirmation dialog and start recording phase
+      setShowConfirmation(false);
+      setIsRecording(true);
+
+      // Wait a bit for media stream to be requested and acquired
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Get the current stream
       const currentStream = streamRef.current;
       if (!currentStream) {
-        throw new Error('No active stream available');
+        throw new Error('No active stream available - camera/microphone access may have been denied');
       }
 
       // Validate stream is still active
@@ -117,14 +124,11 @@ const PanicButton = () => {
       console.log('[PanicButton] ✅ Stream validation passed, starting panic activation');
       console.log('[PanicButton] Stream tracks - video:', videoTracks.length, 'audio:', audioTracks.length);
 
-      // Call activatePanic but keep stream alive until it completes
+      // Call activatePanic with stream - stream will stay alive during entire recording
       await activatePanic(message, currentStream);
 
       console.log('[PanicButton] ✅ Panic activation complete');
       setMessage(''); // Reset message for next use
-
-      // Only close dialog AFTER recording/upload is complete
-      setShowConfirmation(false); // This will trigger cleanup in useEffect
     } catch (error) {
       console.error('[PanicButton] ❌ Error during panic activation:', error);
       toast({
@@ -133,8 +137,9 @@ const PanicButton = () => {
         variant: "destructive",
         duration: 5000
       });
-      // Close dialog on error
-      setShowConfirmation(false);
+    } finally {
+      // End recording phase - this triggers stream cleanup
+      setIsRecording(false);
     }
   };
 
