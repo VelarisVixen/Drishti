@@ -45,12 +45,12 @@ const PanicButton = () => {
     setShowConfirmation(true);
   };
 
+  // Handle stream lifecycle during recording phase
   useEffect(() => {
-    if (showConfirmation) {
-      setIsProcessing(true);
+    if (isRecording) {
       const getMedia = async () => {
         try {
-          console.log('[PanicButton] Requesting camera/microphone access...');
+          console.log('[PanicButton] Recording phase started - requesting camera/microphone access...');
           const stream = await navigator.mediaDevices.getUserMedia({
             video: {
               width: { ideal: 1280 },
@@ -77,16 +77,14 @@ const PanicButton = () => {
             variant: "destructive",
             duration: 8000
           });
-          setShowConfirmation(false);
-        } finally {
-          setIsProcessing(false);
+          setIsRecording(false);
         }
       };
       getMedia();
     } else {
-      // Cleanup stream when dialog is closed
+      // Cleanup stream only when NOT recording
       if (streamRef.current) {
-        console.log('[PanicButton] Cleaning up stream - stopping all tracks');
+        console.log('[PanicButton] Recording phase ended - cleaning up stream');
         streamRef.current.getTracks().forEach(track => {
           console.log('[PanicButton] Stopping track:', track.kind, 'state:', track.readyState);
           track.stop();
@@ -94,7 +92,7 @@ const PanicButton = () => {
         streamRef.current = null;
       }
     }
-  }, [showConfirmation, setIsProcessing]);
+  }, [isRecording]);
 
   const confirmPanic = async () => {
     try {
