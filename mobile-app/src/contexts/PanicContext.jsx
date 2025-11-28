@@ -409,9 +409,9 @@ export const PanicProvider = ({ children }) => {
     } catch (error) {
       console.error('❌ Backend SOS alert failed:', error);
 
-      // In development mode, don't fail completely since Firebase storage worked
+      // In development mode, don't fail completely since Supabase storage worked
       if (window.location.hostname === 'localhost' || window.location.hostname.includes('fly.dev')) {
-        console.warn('⚠️ Backend not available, but alert saved to Firebase');
+        console.warn('⚠️ Backend not available, but alert saved to Supabase');
         return;
       }
 
