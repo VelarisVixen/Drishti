@@ -136,7 +136,7 @@ export const subscribeToSOSAlerts = (callback) => {
       callback(alerts);
     }, (error) => {
       if (error.code === 'permission-denied') {
-        console.warn('⚠️ Firebase permission denied - using local storage fallback');
+        console.warn('���️ Firebase permission denied - using local storage fallback');
         // Use localStorage as fallback
         const localAlerts = JSON.parse(localStorage.getItem('local_sos_alerts') || '[]');
         callback(localAlerts);
@@ -438,27 +438,92 @@ export const getUser = async (userId) => {
 
 const recordStream = (stream, duration) => {
   return new Promise((resolve, reject) => {
-    const mediaRecorder = new MediaRecorder(stream);
-    const chunks = [];
-    let timeout;
-
-    mediaRecorder.ondataavailable = e => chunks.push(e.data);
-    mediaRecorder.onstop = () => {
-      clearTimeout(timeout);
-      const blob = new Blob(chunks, { type: 'video/mp4' });
-      resolve(blob);
-    };
-    mediaRecorder.onerror = (e) => {
-      clearTimeout(timeout);
-      reject(e);
-    };
-
-    mediaRecorder.start();
-    timeout = setTimeout(() => {
-      if (mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
+    try {
+      // Validate stream exists and is active
+      if (!stream || !stream.active) {
+        throw new Error('Stream is not active or available for recording');
       }
-    }, duration);
+
+      const videoTracks = stream.getVideoTracks();
+      if (videoTracks.length === 0) {
+        throw new Error('No video tracks available in stream');
+      }
+
+      console.log('[Firebase] Recording stream with', videoTracks.length, 'video tracks');
+
+      // Try to create MediaRecorder with appropriate MIME type
+      let mediaRecorder;
+      try {
+        // Try webm first as it's more widely supported for recording
+        if (MediaRecorder.isTypeSupported('video/webm')) {
+          mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        } else {
+          // Fall back to default
+          mediaRecorder = new MediaRecorder(stream);
+        }
+      } catch (recorderError) {
+        console.error('[Firebase] Failed to create MediaRecorder:', recorderError.message);
+        throw new Error(`MediaRecorder creation failed: ${recorderError.message}`);
+      }
+
+      const chunks = [];
+      let timeout;
+      let dataReceived = false;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          dataReceived = true;
+          console.log('[Firebase] Data chunk received, size=', e.data.size, 'bytes');
+          chunks.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        clearTimeout(timeout);
+        console.log('[Firebase] Recorder stopped, chunks=', chunks.length, 'dataReceived=', dataReceived);
+
+        // Use webm type instead of mp4 since we're recording with webm codec
+        const blobType = MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : 'video/mp4';
+        const blob = new Blob(chunks, { type: blobType });
+
+        console.log('[Firebase] Recording complete, blob size=', blob.size, 'bytes, type=', blob.type);
+
+        if (blob.size === 0) {
+          console.error('[Firebase] ❌ ERROR: blob size is 0 - no data was captured');
+          reject(new Error('Video recording produced empty blob - no data captured'));
+          return;
+        }
+
+        resolve(blob);
+      };
+
+      mediaRecorder.onerror = (e) => {
+        clearTimeout(timeout);
+        const errorMsg = e.error ? e.error : (e.message || String(e));
+        console.error('[Firebase] ❌ mediaRecorder error:', errorMsg);
+        reject(new Error(`MediaRecorder error: ${errorMsg}`));
+      };
+
+      console.log('[Firebase] Starting MediaRecorder with 500ms timeslice');
+      try {
+        mediaRecorder.start(500); // Request data every 500ms
+        console.log('[Firebase] Recording started, will auto-stop in', duration, 'ms');
+      } catch (startError) {
+        console.error('[Firebase] Failed to start MediaRecorder:', startError.message);
+        throw new Error(`Failed to start MediaRecorder: ${startError.message}`);
+      }
+
+      timeout = setTimeout(() => {
+        console.log('[Firebase] Recording duration reached, stopping recorder');
+        if (mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+        }
+      }, duration);
+
+    } catch (e) {
+      console.error('[Firebase] recordStream exception:', e.message || e);
+      reject(e);
+    }
   });
 };
 
