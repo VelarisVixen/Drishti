@@ -198,8 +198,8 @@ export const PanicProvider = ({ children }) => {
           // First attempt: Supabase upload
           try {
             console.log('[Panic] 🎥 Attempting to record and upload stream to Supabase storage...');
-            toast({ title: "Recording Video...", description: "Recording your emergency video for 15 seconds..." });
-            const supaResult = await uploadStreamToSupabase(stream, firebaseUser.uid, { bucket: 'first_bucket', durationMs: 15000 });
+            toast({ title: "Recording Video...", description: "Recording your emergency video for 5 seconds..." });
+            const supaResult = await uploadStreamToSupabase(stream, firebaseUser.uid, { bucket: 'first_bucket', durationMs: 5000 });
 
             if (!supaResult.videoUrl) {
               throw new Error('Upload completed but no video URL returned');
@@ -216,8 +216,8 @@ export const PanicProvider = ({ children }) => {
             // Fallback: try Firebase upload (existing behavior)
             try {
               console.log('[Panic] 📱 Falling back to Firebase upload...');
-              toast({ title: "Uploading Video (Firebase)...", description: "Recording and uploading to Firebase..." });
-              const fbResult = await uploadVideoAndGetURL(stream, firebaseUser.uid);
+              toast({ title: "Uploading Video (Firebase)...", description: "Recording 5 seconds and uploading to Firebase..." });
+              const fbResult = await uploadVideoAndGetURL(stream, firebaseUser.uid, { durationMs: 5000 });
 
               if (!fbResult.videoUrl) {
                 throw new Error('Firebase upload completed but no URL returned');
