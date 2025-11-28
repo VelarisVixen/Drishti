@@ -181,48 +181,62 @@ export const PanicProvider = ({ children }) => {
           duration: 5000
         });
       } else {
-        console.log('[Panic] ✅ Stream object available, starting video recording and upload...');
-        // First attempt: Supabase upload
-        try {
-          console.log('[Panic] 🎥 Attempting to record and upload stream to Supabase storage...');
-          toast({ title: "Recording Video...", description: "Recording your emergency video for 15 seconds..." });
-          const supaResult = await uploadStreamToSupabase(stream, firebaseUser.uid, { bucket: 'first_bucket', durationMs: 15000 });
+        // Validate stream before recording
+        if (!stream.active) {
+          console.error('[Panic] ❌ Stream is not active');
+          toast({
+            title: "Stream Error",
+            description: "Media stream is no longer active. Please try again.",
+            variant: "destructive",
+            duration: 5000
+          });
+        } else {
+          const videoTracks = stream.getVideoTracks();
+          const audioTracks = stream.getAudioTracks();
+          console.log('[Panic] ✅ Stream validation passed - video tracks:', videoTracks.length, 'audio tracks:', audioTracks.length);
 
-          if (!supaResult.videoUrl) {
-            throw new Error('Upload completed but no video URL returned');
-          }
-
-          videoData.videoUrl = supaResult.videoUrl;
-          videoData.uploadedTo = 'supabase';
-          console.log('[Panic] ✅ Supabase upload SUCCESS, videoUrl=', videoData.videoUrl);
-          toast({ title: "✅ Video Uploaded!", description: "Your emergency video has been successfully uploaded to Supabase." });
-        } catch (supaError) {
-          console.error('[Panic] ❌ Supabase upload FAILED:', supaError?.message || supaError);
-          console.log('[Panic] Attempting Firebase fallback...');
-
-          // Fallback: try Firebase upload (existing behavior)
+          // First attempt: Supabase upload
           try {
-            console.log('[Panic] 📱 Falling back to Firebase upload...');
-            toast({ title: "Uploading Video (Firebase)...", description: "Recording and uploading to Firebase..." });
-            const fbResult = await uploadVideoAndGetURL(stream, firebaseUser.uid);
+            console.log('[Panic] 🎥 Attempting to record and upload stream to Supabase storage...');
+            toast({ title: "Recording Video...", description: "Recording your emergency video for 15 seconds..." });
+            const supaResult = await uploadStreamToSupabase(stream, firebaseUser.uid, { bucket: 'first_bucket', durationMs: 15000 });
 
-            if (!fbResult.videoUrl) {
-              throw new Error('Firebase upload completed but no URL returned');
+            if (!supaResult.videoUrl) {
+              throw new Error('Upload completed but no video URL returned');
             }
 
-            videoData.videoUrl = fbResult.videoUrl;
-            videoData.uploadedTo = 'firebase';
-            console.log('[Panic] ✅ Firebase upload SUCCESS, videoUrl=', videoData.videoUrl);
-            toast({ title: "✅ Video Uploaded (Firebase)!", description: "Your emergency video has been uploaded to Firebase." });
-          } catch (videoError) {
-            console.error('[Panic] ❌ CRITICAL: Both Supabase AND Firebase video uploads FAILED:', videoError?.message || videoError);
-            toast({
-              title: "❌ Video Upload Failed",
-              description: "SOS alert will be sent WITHOUT video. Emergency response may be delayed.",
-              variant: "destructive",
-              duration: 6000
-            });
-            // Continue with empty video data - this is the last resort
+            videoData.videoUrl = supaResult.videoUrl;
+            videoData.uploadedTo = 'supabase';
+            console.log('[Panic] ✅ Supabase upload SUCCESS, videoUrl=', videoData.videoUrl);
+            toast({ title: "✅ Video Uploaded!", description: "Your emergency video has been successfully uploaded to Supabase." });
+          } catch (supaError) {
+            console.error('[Panic] ❌ Supabase upload FAILED:', supaError?.message || supaError);
+            console.log('[Panic] Attempting Firebase fallback...');
+
+            // Fallback: try Firebase upload (existing behavior)
+            try {
+              console.log('[Panic] 📱 Falling back to Firebase upload...');
+              toast({ title: "Uploading Video (Firebase)...", description: "Recording and uploading to Firebase..." });
+              const fbResult = await uploadVideoAndGetURL(stream, firebaseUser.uid);
+
+              if (!fbResult.videoUrl) {
+                throw new Error('Firebase upload completed but no URL returned');
+              }
+
+              videoData.videoUrl = fbResult.videoUrl;
+              videoData.uploadedTo = 'firebase';
+              console.log('[Panic] ✅ Firebase upload SUCCESS, videoUrl=', videoData.videoUrl);
+              toast({ title: "✅ Video Uploaded (Firebase)!", description: "Your emergency video has been uploaded to Firebase." });
+            } catch (videoError) {
+              console.error('[Panic] ❌ CRITICAL: Both Supabase AND Firebase video uploads FAILED:', videoError?.message || videoError);
+              toast({
+                title: "❌ Video Upload Failed",
+                description: "SOS alert will be sent WITHOUT video. Emergency response may be delayed.",
+                variant: "destructive",
+                duration: 6000
+              });
+              // Continue with empty video data - this is the last resort
+            }
           }
         }
       }
