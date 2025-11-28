@@ -136,7 +136,7 @@ export const subscribeToSOSAlerts = (callback) => {
       callback(alerts);
     }, (error) => {
       if (error.code === 'permission-denied') {
-        console.warn('���️ Firebase permission denied - using local storage fallback');
+        console.warn('⚠️ Firebase permission denied - using local storage fallback');
         // Use localStorage as fallback
         const localAlerts = JSON.parse(localStorage.getItem('local_sos_alerts') || '[]');
         callback(localAlerts);
@@ -527,11 +527,11 @@ const recordStream = (stream, duration) => {
   });
 };
 
-export const uploadVideoAndGetURL = async (stream, userId) => {
+export const uploadVideoAndGetURL = async (stream, userId, options = {}) => {
   if (!stream) {
     throw new Error("No video stream provided.");
   }
-  
+
   console.log('🎥 Starting real video upload to Firebase Storage...');
 
   toast({
@@ -540,7 +540,7 @@ export const uploadVideoAndGetURL = async (stream, userId) => {
     duration: 3000
   });
 
-  const videoDurationMs = 15000;
+  const videoDurationMs = options.durationMs || 15000;
   const videoBlob = await recordStream(stream, videoDurationMs);
   
   const videoFileName = `sos-videos/sos_${Date.now()}.mp4`;
