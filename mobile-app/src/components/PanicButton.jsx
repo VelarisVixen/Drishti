@@ -117,23 +117,24 @@ const PanicButton = () => {
       console.log('[PanicButton] ✅ Stream validation passed, starting panic activation');
       console.log('[PanicButton] Stream tracks - video:', videoTracks.length, 'audio:', audioTracks.length);
 
-      // Call activatePanic but don't close dialog until it completes
+      // Call activatePanic but keep stream alive until it completes
       await activatePanic(message, currentStream);
 
       console.log('[PanicButton] ✅ Panic activation complete');
       setMessage(''); // Reset message for next use
+
+      // Only close dialog AFTER recording/upload is complete
+      setShowConfirmation(false); // This will trigger cleanup in useEffect
     } catch (error) {
       console.error('[PanicButton] ❌ Error during panic activation:', error);
       toast({
-        title: "Stream Error",
-        description: error.message || "Failed to validate media stream. Please try again.",
+        title: "Error",
+        description: error.message || "Failed to send SOS alert. Please try again.",
         variant: "destructive",
         duration: 5000
       });
-      // Error is already handled in activatePanic with toast
-    } finally {
-      // Only close dialog after recording/upload is complete
-      setShowConfirmation(false); // This will trigger cleanup in useEffect
+      // Close dialog on error
+      setShowConfirmation(false);
     }
   };
 
