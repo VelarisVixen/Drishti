@@ -33,7 +33,9 @@ const PanicButton = () => {
       return () => clearTimeout(backupTimeout);
     }
   }, [isActivated, isProcessing, resetButtonState]);
+
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [message, setMessage] = useState('');
   const videoRef = useRef(null);
   const streamRef = useRef(null);
