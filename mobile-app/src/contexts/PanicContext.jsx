@@ -286,32 +286,9 @@ export const PanicProvider = ({ children }) => {
           console.error('[Panic] ❌ Supabase insert (local) failed:', e.message || e);
         }
       } else {
-        // Save to Firestore (real-time)
-        console.log('🚨 Creating SOS alert in Firestore...');
-        alertId = await createSOSAlert(sosAlertData);
-
-        // Only log notification if SOS alert was successfully created
-        if (alertId) {
-          try {
-            await createNotificationLog({
-              reportId: alertId, // Use reportId instead of alertId to match schema
-              userId: firebaseUser.uid,
-              type: 'sos_alert_created',
-              message: `SOS alert created: ${message || 'Emergency activated'}`,
-              metadata: {
-                location: currentLocation,
-                hasVideo: !!videoData.videoUrl
-              }
-            });
-          } catch (logError) {
-            console.warn('⚠️ Failed to create notification log:', logError.message);
-            // Don't fail the entire operation if logging fails
-          }
-        }
-
-        // Insert to Supabase sos_alerts table
+        // Save to Supabase only
+        console.log('[Panic] 💾 Creating SOS alert in Supabase...');
         try {
-          console.log('[Panic] 💾 Inserting SOS alert into Supabase sos_alerts table (firebase mode)...');
           const insertPayload = {
             user_id: firebaseUser.uid,
             message: sosAlertData.message,
@@ -320,21 +297,21 @@ export const PanicProvider = ({ children }) => {
             location_longitude: sosAlertData.location.longitude,
             location_address: sosAlertData.location.address,
             status: 'pending'
-            // gemini_analysis_* and analysis fields intentionally left out (null)
           };
-          console.log('[Panic] 📤 Supabase insert payload (firebase mode):', {
+          console.log('[Panic] 📤 Supabase insert payload:', {
             ...insertPayload,
             video_url: insertPayload.video_url ? '✅ HAS VIDEO URL' : '❌ NO VIDEO URL'
           });
           const { data: insertData, error: insertError } = await supabase.from('sos_alerts').insert([insertPayload]).select('id');
           if (insertError) {
-            console.warn('[Panic] ❌ Supabase insert (firebase) error:', insertError.message || insertError);
+            console.warn('[Panic] ❌ Supabase insert error:', insertError.message || insertError);
           } else {
-            supabaseInsertId = insertData?.[0]?.id;
-            console.log('[Panic] ✅ Supabase insert (firebase) success, alert id=', supabaseInsertId, 'with video:', !!insertPayload.video_url);
+            alertId = insertData?.[0]?.id;
+            supabaseInsertId = alertId;
+            console.log('[Panic] ✅ Supabase insert success, alert id=', alertId, 'with video:', !!insertPayload.video_url);
           }
         } catch (e) {
-          console.error('[Panic] ❌ Supabase insert (firebase) failed:', e.message || e);
+          console.error('[Panic] ❌ Supabase insert failed:', e.message || e);
         }
       }
 
