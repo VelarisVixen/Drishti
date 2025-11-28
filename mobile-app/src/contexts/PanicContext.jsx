@@ -353,17 +353,6 @@ export const PanicProvider = ({ children }) => {
     } catch (error) {
       console.error("❌ Panic Activation Error:", error);
 
-      // Log error (only for Firebase mode)
-      if (firebaseUser?.uid && !isLocalMode) {
-        await createNotificationLog({
-          reportId: `error_${Date.now()}`, // Dummy reportId for error cases
-          userId: firebaseUser.uid,
-          type: 'sos_alert_failed',
-          message: `SOS alert failed: ${error.message}`,
-          metadata: { error: error.message }
-        }).catch(console.error);
-      }
-
       toast({
         title: "SOS Alert Failed",
         description: error.message || "Failed to send SOS alert. Please try again.",
