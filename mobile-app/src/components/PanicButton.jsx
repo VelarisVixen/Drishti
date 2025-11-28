@@ -101,15 +101,35 @@ const PanicButton = () => {
       if (!currentStream) {
         throw new Error('No active stream available');
       }
-      console.log('[PanicButton] Starting panic activation with stream');
+
+      // Validate stream is still active
+      if (!currentStream.active) {
+        throw new Error('Stream is no longer active');
+      }
+
+      const videoTracks = currentStream.getVideoTracks();
+      const audioTracks = currentStream.getAudioTracks();
+
+      if (videoTracks.length === 0 || audioTracks.length === 0) {
+        throw new Error('Stream is missing video or audio tracks');
+      }
+
+      console.log('[PanicButton] ✅ Stream validation passed, starting panic activation');
+      console.log('[PanicButton] Stream tracks - video:', videoTracks.length, 'audio:', audioTracks.length);
 
       // Call activatePanic but don't close dialog until it completes
       await activatePanic(message, currentStream);
 
-      console.log('[PanicButton] Panic activation complete');
+      console.log('[PanicButton] ✅ Panic activation complete');
       setMessage(''); // Reset message for next use
     } catch (error) {
-      console.error('[PanicButton] Error during panic activation:', error);
+      console.error('[PanicButton] ❌ Error during panic activation:', error);
+      toast({
+        title: "Stream Error",
+        description: error.message || "Failed to validate media stream. Please try again.",
+        variant: "destructive",
+        duration: 5000
+      });
       // Error is already handled in activatePanic with toast
     } finally {
       // Only close dialog after recording/upload is complete
