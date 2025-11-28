@@ -212,17 +212,9 @@ const PanicButton = () => {
               <span className="text-gray-800">Confirm SOS Alert</span>
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-600">
-              You are about to send an emergency alert. A live video recording has started. Please describe the situation below.
+              A <strong>5-second video will be recorded automatically</strong> after you close this dialog. Please describe the emergency situation below (optional).
             </AlertDialogDescription>
           </AlertDialogHeader>
-
-          <div className="my-4">
-             <video ref={videoRef} className="w-full rounded-lg bg-gray-100 border border-gray-200" muted autoPlay playsInline />
-             <div className="flex items-center text-red-500 text-sm mt-2 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
-                 <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
-                 Recording emergency video...
-             </div>
-          </div>
 
           <textarea
             value={message}
@@ -232,15 +224,18 @@ const PanicButton = () => {
             rows="3"
           />
 
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+            <strong>⏱️ Recording:</strong> When you confirm, the dialog will close and your camera will automatically record a 5-second video of the emergency situation. Make sure your camera and microphone permissions are enabled.
+          </div>
+
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
             <strong>Demo Mode:</strong> This SOS alert is simulated. In production, emergency services would be contacted immediately.
           </div>
 
           <AlertDialogFooter>
             <AlertDialogCancel onClick={cancelPanic} className="bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200 hover:text-gray-800">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmPanic} className="bg-red-500 hover:bg-red-600 text-white" disabled={isProcessing}>
-              {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Send Emergency Alert
+            <AlertDialogAction onClick={confirmPanic} className="bg-red-500 hover:bg-red-600 text-white">
+              Confirm & Start Recording
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
