@@ -377,7 +377,7 @@ export const PanicProvider = ({ children }) => {
 
         toast({
           title: "Development Mode",
-          description: "SOS alert saved to Firebase. In production, emergency services would be notified.",
+          description: "SOS alert saved to Supabase. In production, emergency services would be notified.",
           duration: 5000
         });
         return;
