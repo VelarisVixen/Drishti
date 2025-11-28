@@ -48,13 +48,27 @@ const PanicButton = () => {
       setIsProcessing(true);
       const getMedia = async () => {
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          console.log('[PanicButton] Requesting camera/microphone access...');
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: true
+          });
+
+          console.log('[PanicButton] ✅ Stream obtained successfully');
+          const videoTracks = stream.getVideoTracks();
+          const audioTracks = stream.getAudioTracks();
+          console.log('[PanicButton] Stream has', videoTracks.length, 'video tracks and', audioTracks.length, 'audio tracks');
+
           streamRef.current = stream;
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
+            console.log('[PanicButton] Stream assigned to video preview');
           }
         } catch (err) {
-          console.error("Camera/Mic permission denied:", err);
+          console.error("[PanicButton] ❌ Camera/Mic permission denied:", err);
           toast({
             title: "Permission Denied",
             description: "Camera and microphone access is required. Please enable permissions in your browser settings.",
@@ -70,7 +84,11 @@ const PanicButton = () => {
     } else {
       // Cleanup stream when dialog is closed
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        console.log('[PanicButton] Cleaning up stream - stopping all tracks');
+        streamRef.current.getTracks().forEach(track => {
+          console.log('[PanicButton] Stopping track:', track.kind, 'state:', track.readyState);
+          track.stop();
+        });
         streamRef.current = null;
       }
     }
