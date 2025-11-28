@@ -2,11 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { useLocation } from '@/contexts/LocationContext';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  uploadVideoAndGetURL,
-  createSOSAlert,
-  createNotificationLog
-} from '@/lib/firebase';
 import { supabase, uploadStreamToSupabase } from '@/lib/supabaseClient';
 
 const PanicContext = createContext();
