@@ -434,21 +434,13 @@ export const PanicProvider = ({ children }) => {
 
     try {
       // Note: In production, you might want to soft-delete or archive instead of clearing
-      // For now, we'll just clear the local state as Firestore data persists
+      // For now, we'll just clear the local state as Supabase data persists
       setPanicHistory([]);
       setRealtimeAlerts([]);
 
-      // Log the action
-      await createNotificationLog({
-        reportId: `history_clear_${Date.now()}`, // Dummy reportId for non-SOS actions
-        userId: firebaseUser.uid,
-        type: 'history_cleared',
-        message: 'User cleared SOS alert history from local view'
-      });
-
       toast({
         title: "Local History Cleared",
-        description: "SOS alert history cleared from local view. Data remains in Firebase."
+        description: "SOS alert history cleared from local view. Data remains in Supabase."
       });
 
       console.log('✅ Local SOS history cleared');
