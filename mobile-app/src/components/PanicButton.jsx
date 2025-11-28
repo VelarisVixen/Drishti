@@ -100,13 +100,23 @@ const PanicButton = () => {
       setShowConfirmation(false);
       setIsRecording(true);
 
-      // Wait a bit for media stream to be requested and acquired
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait for media stream to be acquired (permission dialog can take several seconds)
+      // Check periodically until stream is available (max 10 seconds)
+      let retries = 0;
+      let currentStream = streamRef.current;
 
-      // Get the current stream
-      const currentStream = streamRef.current;
+      while (!currentStream && retries < 20) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        currentStream = streamRef.current;
+        retries++;
+        if (currentStream) {
+          console.log('[PanicButton] ✅ Stream acquired after', retries * 500, 'ms');
+          break;
+        }
+      }
+
       if (!currentStream) {
-        throw new Error('No active stream available - camera/microphone access may have been denied');
+        throw new Error('No active stream available - camera/microphone access may have been denied or timed out');
       }
 
       // Validate stream is still active
