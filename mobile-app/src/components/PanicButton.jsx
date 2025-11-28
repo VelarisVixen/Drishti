@@ -144,7 +144,8 @@ const PanicButton = () => {
   };
 
   const cancelPanic = () => {
-    setShowConfirmation(false); // This will trigger cleanup in useEffect
+    setShowConfirmation(false);
+    setMessage('');
   };
 
   return (
