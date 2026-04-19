@@ -3,12 +3,8 @@ import react from '@vitejs/plugin-react';
 import { createLogger, defineConfig } from 'vite';
 
 const isDev = process.env.NODE_ENV !== 'production';
+// Skip optional visual editor plugins - they are not required for the app to run
 let inlineEditPlugin, editModeDevPlugin;
-
-if (isDev) {
-	inlineEditPlugin = (await import('./plugins/visual-editor/vite-plugin-react-inline-editor.js')).default;
-	editModeDevPlugin = (await import('./plugins/visual-editor/vite-plugin-edit-mode.js')).default;
-}
 
 const configHorizonsViteErrorHandler = `
 const observer = new MutationObserver((mutations) => {
@@ -189,13 +185,17 @@ logger.error = (msg, options) => {
 	loggerError(msg, options);
 }
 
+const plugins = [];
+if (isDev && inlineEditPlugin && editModeDevPlugin) {
+	plugins.push(inlineEditPlugin());
+	plugins.push(editModeDevPlugin());
+}
+plugins.push(react());
+plugins.push(addTransformIndexHtml);
+
 export default defineConfig({
 	customLogger: logger,
-	plugins: [
-		...(isDev ? [inlineEditPlugin(), editModeDevPlugin()] : []),
-		react(),
-		addTransformIndexHtml
-	],
+	plugins: plugins,
 	server: {
 		cors: true,
 		headers: {

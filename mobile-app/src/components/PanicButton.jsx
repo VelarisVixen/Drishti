@@ -33,7 +33,9 @@ const PanicButton = () => {
       return () => clearTimeout(backupTimeout);
     }
   }, [isActivated, isProcessing, resetButtonState]);
+
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [message, setMessage] = useState('');
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -43,47 +45,117 @@ const PanicButton = () => {
     setShowConfirmation(true);
   };
 
+  // Handle stream lifecycle during recording phase
   useEffect(() => {
-    if (showConfirmation) {
-      setIsProcessing(true);
+    if (isRecording) {
       const getMedia = async () => {
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          console.log('[PanicButton] Recording phase started - requesting camera/microphone access...');
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: true
+          });
+
+          console.log('[PanicButton] ✅ Stream obtained successfully');
+          const videoTracks = stream.getVideoTracks();
+          const audioTracks = stream.getAudioTracks();
+          console.log('[PanicButton] Stream has', videoTracks.length, 'video tracks and', audioTracks.length, 'audio tracks');
+
           streamRef.current = stream;
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
+            console.log('[PanicButton] Stream assigned to video preview');
           }
         } catch (err) {
-          console.error("Camera/Mic permission denied:", err);
+          console.error("[PanicButton] ❌ Camera/Mic permission denied:", err);
           toast({
             title: "Permission Denied",
             description: "Camera and microphone access is required. Please enable permissions in your browser settings.",
             variant: "destructive",
             duration: 8000
           });
-          setShowConfirmation(false);
-        } finally {
-          setIsProcessing(false);
+          setIsRecording(false);
         }
       };
       getMedia();
     } else {
-      // Cleanup stream when dialog is closed
+      // Cleanup stream only when NOT recording
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        console.log('[PanicButton] Recording phase ended - cleaning up stream');
+        streamRef.current.getTracks().forEach(track => {
+          console.log('[PanicButton] Stopping track:', track.kind, 'state:', track.readyState);
+          track.stop();
+        });
         streamRef.current = null;
       }
     }
-  }, [showConfirmation, setIsProcessing]);
+  }, [isRecording]);
 
   const confirmPanic = async () => {
-    await activatePanic(message, streamRef.current);
-    setMessage(''); // Reset message for next use
-    setShowConfirmation(false); // This will trigger cleanup in useEffect
+    try {
+      // Close confirmation dialog and start recording phase
+      setShowConfirmation(false);
+      setIsRecording(true);
+
+      // Wait for media stream to be acquired (permission dialog can take several seconds)
+      // Check periodically until stream is available (max 10 seconds)
+      let retries = 0;
+      let currentStream = streamRef.current;
+
+      while (!currentStream && retries < 20) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        currentStream = streamRef.current;
+        retries++;
+        if (currentStream) {
+          console.log('[PanicButton] ✅ Stream acquired after', retries * 500, 'ms');
+          break;
+        }
+      }
+
+      if (!currentStream) {
+        throw new Error('No active stream available - camera/microphone access may have been denied or timed out');
+      }
+
+      // Validate stream is still active
+      if (!currentStream.active) {
+        throw new Error('Stream is no longer active');
+      }
+
+      const videoTracks = currentStream.getVideoTracks();
+      const audioTracks = currentStream.getAudioTracks();
+
+      if (videoTracks.length === 0 || audioTracks.length === 0) {
+        throw new Error('Stream is missing video or audio tracks');
+      }
+
+      console.log('[PanicButton] ✅ Stream validation passed, starting panic activation');
+      console.log('[PanicButton] Stream tracks - video:', videoTracks.length, 'audio:', audioTracks.length);
+
+      // Call activatePanic with stream - stream will stay alive during entire recording
+      await activatePanic(message, currentStream);
+
+      console.log('[PanicButton] ✅ Panic activation complete');
+      setMessage(''); // Reset message for next use
+    } catch (error) {
+      console.error('[PanicButton] ❌ Error during panic activation:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send SOS alert. Please try again.",
+        variant: "destructive",
+        duration: 5000
+      });
+    } finally {
+      // End recording phase - this triggers stream cleanup
+      setIsRecording(false);
+    }
   };
 
   const cancelPanic = () => {
-    setShowConfirmation(false); // This will trigger cleanup in useEffect
+    setShowConfirmation(false);
+    setMessage('');
   };
 
   return (
@@ -151,17 +223,9 @@ const PanicButton = () => {
               <span className="text-gray-800">Confirm SOS Alert</span>
             </AlertDialogTitle>
             <AlertDialogDescription className="text-gray-600">
-              You are about to send an emergency alert. A live video recording has started. Please describe the situation below.
+              A <strong>5-second video will be recorded automatically</strong> after you close this dialog. Please describe the emergency situation below (optional).
             </AlertDialogDescription>
           </AlertDialogHeader>
-
-          <div className="my-4">
-             <video ref={videoRef} className="w-full rounded-lg bg-gray-100 border border-gray-200" muted autoPlay playsInline />
-             <div className="flex items-center text-red-500 text-sm mt-2 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
-                 <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
-                 Recording emergency video...
-             </div>
-          </div>
 
           <textarea
             value={message}
@@ -171,15 +235,18 @@ const PanicButton = () => {
             rows="3"
           />
 
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+            <strong>⏱️ Recording:</strong> When you confirm, the dialog will close and your camera will automatically record a 5-second video of the emergency situation. Make sure your camera and microphone permissions are enabled.
+          </div>
+
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
             <strong>Demo Mode:</strong> This SOS alert is simulated. In production, emergency services would be contacted immediately.
           </div>
 
           <AlertDialogFooter>
             <AlertDialogCancel onClick={cancelPanic} className="bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200 hover:text-gray-800">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmPanic} className="bg-red-500 hover:bg-red-600 text-white" disabled={isProcessing}>
-              {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Send Emergency Alert
+            <AlertDialogAction onClick={confirmPanic} className="bg-red-500 hover:bg-red-600 text-white">
+              Confirm & Start Recording
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

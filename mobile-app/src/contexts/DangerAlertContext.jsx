@@ -47,17 +47,9 @@ export const DangerAlertProvider = ({ children }) => {
       }
     });
 
-    // Simulate periodic danger alerts for demo (remove in production)
-    const demoInterval = setInterval(() => {
-      if (Math.random() > 0.9) { // 10% chance every 30 seconds
-        simulateIncomingAlert();
-      }
-    }, 30000);
-
     return () => {
       console.log('🚫 Cleaning up system alerts subscription');
       unsubscribe();
-      clearInterval(demoInterval);
       setIsConnected(false);
     };
   }, [location, activeAlert]);
@@ -92,32 +84,6 @@ export const DangerAlertProvider = ({ children }) => {
     }
   };
 
-  // Simulate incoming alert for demo (will create real Firestore entry)
-  const simulateIncomingAlert = async () => {
-    if (!location || !firebaseUser?.uid) return;
-
-    const alertTypes = ['fire', 'violence', 'medical', 'evacuation'];
-    const randomType = alertTypes[Math.floor(Math.random() * alertTypes.length)];
-
-    const mockAlert = {
-      id: `alert_${Date.now()}`,
-      title: `${randomType.charAt(0).toUpperCase() + randomType.slice(1)} Alert`,
-      message: `Emergency situation reported in your area. Please stay alert and follow safety protocols.`,
-      severity: Math.random() > 0.5 ? 'high' : 'medium',
-      location: `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`,
-      radius: 500, // meters
-      duration: 60, // minutes
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
-    };
-
-    try {
-      // Create real Firestore entry
-      const alertId = await createSystemAlert(mockAlert);
-      console.log('🚨 Simulated system alert created in Firestore:', alertId);
-    } catch (error) {
-      console.error('❌ Error creating simulated alert:', error);
-    }
-  };
 
   const handleIncomingAlert = (alertData) => {
     if (!location) return;
@@ -243,7 +209,6 @@ export const DangerAlertProvider = ({ children }) => {
     dismissAlert,
     clearAlertHistory,
     createNewSystemAlert,
-    simulateIncomingAlert
   };
 
   return (

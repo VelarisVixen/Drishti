@@ -15,47 +15,38 @@ import {
   Wifi,
   Eye
 } from 'lucide-react';
-import { useDangerAlert } from '@/contexts/DangerAlertContext';
 import { usePanic } from '@/contexts/PanicContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 
 const SOSAlerts = () => {
-  const { alertHistory, isConnected } = useDangerAlert();
   const { realtimeAlerts, panicHistory } = usePanic();
   const { firebaseUser } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState('all');
 
-  // Combine SOS alerts (from panic context) and danger alerts for comprehensive view
+  // Use ONLY realtime SOS alerts (no mock/demo or merged data)
   const allAlerts = React.useMemo(() => {
     const sosAlerts = (realtimeAlerts || []).map(alert => ({
       ...alert,
-      type: alert.type || 'sos',
-      title: alert.title || 'SOS Emergency Alert',
-      severity: alert.severity || 'high',
-      status: alert.status || 'pending',
-      reportedBy: alert.reportedBy || 'SafeGuard User',
-      location: alert.location || { address: 'Location unavailable' },
-      message: alert.message || 'Emergency situation reported'
+      // Preserve actual fields from realtime source; do not inject demo defaults
+      type: alert.type,
+      title: alert.title,
+      severity: alert.severity,
+      status: alert.status,
+      reportedBy: alert.reportedBy,
+      location: alert.location,
+      message: alert.message,
+      timestamp: alert.timestamp || Date.now()
     }));
 
-    const dangerAlerts = (alertHistory || []).map(alert => ({
-      ...alert,
-      type: alert.type || 'emergency',
-      severity: alert.severity || 'medium',
-      status: alert.status || 'active',
-      reportedBy: alert.source || alert.reportedBy || 'Emergency Services',
-      location: alert.location || { address: 'Location unavailable' },
-      message: alert.message || 'Emergency alert received'
-    }));
-
-    return [...sosAlerts, ...dangerAlerts].sort((a, b) => {
+    // Sort newest first
+    return sosAlerts.sort((a, b) => {
       const aTime = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp || Date.now());
       const bTime = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp || Date.now());
       return bTime - aTime;
     });
-  }, [realtimeAlerts, alertHistory]);
+  }, [realtimeAlerts]);
 
 
   const handleRefresh = async () => {
@@ -156,13 +147,13 @@ const SOSAlerts = () => {
 
   const filteredAlerts = allAlerts.filter(alert => {
     if (filter === 'all') return true;
-    return (alert.severity || 'medium') === filter || (alert.status || 'pending') === filter;
+    return alert.severity === filter || alert.status === filter;
   });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-yellow-50 to-amber-50 pb-24">
       <Helmet>
-        <title>SOS Alerts - SafeGuard</title>
+        <title>SOS Alerts - Drishti</title>
       </Helmet>
 
       {/* Decorative background */}
@@ -184,7 +175,7 @@ const SOSAlerts = () => {
               <p className="text-sm text-gray-600">Real-time emergency notifications</p>
             </div>
             <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
+              <div className={`w-3 h-3 rounded-full ${realtimeAlerts && realtimeAlerts.length > 0 ? 'bg-green-400 animate-pulse' : 'bg-gray-300'}`}></div>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -213,7 +204,7 @@ const SOSAlerts = () => {
                   <AlertTriangle className="w-6 h-6 text-red-600" />
                 </div>
                 <div className="text-2xl font-bold text-red-700">
-                  {allAlerts.filter(a => (a.status || 'pending') === 'active' || (a.status || 'pending') === 'pending').length}
+                  {allAlerts.filter(a => a.status === 'active' || a.status === 'pending').length}
                 </div>
                 <div className="text-xs text-gray-600">Active Alerts</div>
               </div>
@@ -230,7 +221,7 @@ const SOSAlerts = () => {
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
                 <div className="text-2xl font-bold text-green-700">
-                  {allAlerts.filter(a => (a.status || 'pending') === 'resolved' || (a.status || 'pending') === 'completed').length}
+                  {allAlerts.filter(a => a.status === 'resolved' || a.status === 'completed').length}
                 </div>
                 <div className="text-xs text-gray-600">Resolved</div>
               </div>
@@ -247,7 +238,7 @@ const SOSAlerts = () => {
                   <Eye className="w-6 h-6 text-blue-600" />
                 </div>
                 <div className="text-2xl font-bold text-blue-700">
-                  {allAlerts.filter(a => (a.status || 'pending') === 'monitoring' || (a.status || 'pending') === 'analyzing').length}
+                  {allAlerts.filter(a => a.status === 'monitoring' || a.status === 'analyzing').length}
                 </div>
                 <div className="text-xs text-gray-600">Monitoring</div>
               </div>

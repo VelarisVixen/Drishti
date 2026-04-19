@@ -127,10 +127,25 @@ export const LocationProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // Auto-get location on mount
+    // Auto-get location on mount and start watching for realtime updates
+    let watchId = null;
     getCurrentLocation().catch(() => {
       // Error already handled in getCurrentLocation
     });
+
+    try {
+      watchId = watchLocation();
+      console.log('[Location] Started watchPosition with id=', watchId);
+    } catch (e) {
+      console.warn('[Location] watchLocation failed to start:', e.message || e);
+    }
+
+    return () => {
+      if (watchId) {
+        stopWatchingLocation(watchId);
+        console.log('[Location] Stopped watchPosition with id=', watchId);
+      }
+    };
   }, []);
 
   const value = {

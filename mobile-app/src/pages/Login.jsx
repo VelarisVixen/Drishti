@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, User, Mail, Phone, LogIn } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import GoogleSignIn from '@/components/GoogleSignIn';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -69,7 +70,7 @@ const Login = () => {
               transition={{ delay: 0.3 }}
               className="text-3xl font-bold text-gray-800 mb-2"
             >
-              Welcome to SafeGuard
+              Welcome to Drishti
             </motion.h1>
             
             <motion.p
@@ -142,6 +143,11 @@ const Login = () => {
                 className="w-full px-4 py-3 bg-white/70 border border-yellow-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-200 text-gray-800 placeholder-gray-500"
                 required
               />
+            </div>
+
+            {/* Google Sign-in */}
+            <div className="mb-3">
+              <GoogleSignIn />
             </div>
 
             {/* Submit Button */}
